@@ -14,11 +14,13 @@ def Single_PCA_train(X, Y, num_feature_piter=1):
     for i in range(num_feature_piter):
         par['idx'][i] = i
         par['Energy'][i] = par['PCA'].explained_variance_ratio_[par['idx'][i]]
-    par['Bias'] = np.max(linalg.norm(X_transform[:,par['idx']], axis=1))
-    fea = X_transform[:,par['idx']] + par['Bias']
-    X_transform[:,par['idx']] = 0
+    par['Bias'] = np.max(linalg.norm(X_transform[:, par['idx']], axis=1))
+    fea = X_transform[:, par['idx']] + par['Bias']
+    X_transform[:, par['idx']] = 0
     X_mean[:, par['idx']] = 0
-    X = np.dot(X_transform, par['PCA'].components_) + X_mean
+    kernel = par['PCA'].components_.copy
+    kernel[idx] = 0
+    X = np.dot(X_transform, kernel) + X_mean
     return X, fea, par 
 
 def Single_PCA_test(X, par):
@@ -27,7 +29,9 @@ def Single_PCA_test(X, par):
     fea = X_transform[:,par['idx']] + par['Bias']
     X_transform[:,par['idx']] = 0
     X_mean[:, par['idx']] = 0
-    X = np.dot(X_transform, par['PCA'].components_) + X_mean
+    kernel = par['PCA'].components_.copy
+    kernel[idx] = 0
+    X = np.dot(X_transform, kernel) + X_mean
     return X, fea
 
 def rPCA_train(X, Y, num_feature_piter=1, energy=0.99, num_feature=None):
