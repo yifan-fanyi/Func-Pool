@@ -1,4 +1,4 @@
-# v2020.01.13
+# v2020.01.16
 import numpy as np 
 from numpy import linalg
 import sklearn
@@ -19,7 +19,7 @@ def Single_PCA_train(X, Y, num_feature_piter=1):
     X_transform[:, par['idx']] = 0
     X_mean[:, par['idx']] = 0
     kernel = par['PCA'].components_.copy
-    kernel[idx] = 0
+    kernel[par['idx']] = 0
     X = np.dot(X_transform, kernel) + X_mean
     return X, fea, par 
 
@@ -30,7 +30,7 @@ def Single_PCA_test(X, par):
     X_transform[:,par['idx']] = 0
     X_mean[:, par['idx']] = 0
     kernel = par['PCA'].components_.copy
-    kernel[idx] = 0
+    kernel[par['idx']] = 0
     X = np.dot(X_transform, kernel) + X_mean
     return X, fea
 
