@@ -78,11 +78,11 @@ def rPCA(X, Y, num_feature_piter, energy, path, train, num_feature):
 
 if __name__ == "__main__":
     import cv2
-    X = cv2.imread('3063.jpg').reshape(-1,3)
+    X = cv2.imread('./data/test.jpg').reshape(-1,3)
     X = X.astype('float64')
-    Y = cv2.imread('3063t.jpg', 0).reshape(-1,1)
+    Y = cv2.imread('./data/gt.jpg', 0).reshape(-1,1)
     Y[Y!=0] = 1
-    rPCA_train(X[0:100], Y[0:100], num_feature=1, energy=None, num_feature=2)
+    rPCA_train(X[0:100], Y[0:100], num_feature_piter=1, energy=None, num_feature=2)
     print(X[0:3])
     fea = rPCA(X[0:100], Y[0:100], num_feature_piter=1, energy=None, path='tmp.pkl', train=0, num_feature=2)
     print(fea[0:3])

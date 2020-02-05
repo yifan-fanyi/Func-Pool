@@ -51,7 +51,7 @@ class myRegression():
 
 if __name__ == "__main__":
     import cv2
-    X = cv2.imread('../../data/test.jpg')
+    X = cv2.imread('./data/test.jpg')
     X = cv2.resize(X, (40,40))
     X = X.reshape(-1,3)
     Y = np.random.randint(3, size=X.shape[0]) + 1

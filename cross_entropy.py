@@ -118,16 +118,15 @@ def CE(X, Y, num_class):
 
 if __name__ == "__main__":
     import cv2
-    X = cv2.imread('se.jpg')
-    cv2.imwrite('se.jpg', X)
-    Y = cv2.imread('gt.jpg', 0)
+    X = cv2.imread('./data/se.jpg')
+    cv2.imwrite('./data/se.jpg', X)
+    Y = cv2.imread('./data/gt.jpg', 0)
     Y[Y!=0] = 1
     X = X.reshape(-1, 3)
     Y = Y.reshape(-1, 1)
     print(CE(X, Y, 2))
 
     '''
-
     import time
     t0 = time.time()
     x = np.array([1,2,3,1,3,5,7,1,2,4])

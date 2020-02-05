@@ -96,7 +96,7 @@ def cwPCA(X, par, train=False, energyTH=None, SaabArgs=None, shrinkArgs=None):
 
 if __name__ == "__main__":
     import cv2
-    X = cv2.imread('test.jpg')
+    X = cv2.imread('./data/test.jpg')
     s = [1, 321, 481, -1]
     X = X.reshape(s)
     print("Input shape: ", X.shape)

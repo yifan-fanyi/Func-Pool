@@ -84,7 +84,7 @@ def PixelHop_Unit(feature, dilate=np.array([1]), num_AC_kernels=6, pad='reflect'
 
 if __name__ == "__main__":
     import cv2
-    X = cv2.imread('test.jpg')
+    X = cv2.imread('./data/test.jpg')
     X = X.reshape(1, X.shape[0], X.shape[1], X.shape[2]).astype('float64')
     X1 = PixelHop_Unit(X, dilate=np.array([1]), num_AC_kernels=6, pad='reflect', weight_name='tmp.pkl', getK=1, batch=None, needBias=True)
     print(X1.shape)

@@ -1,5 +1,6 @@
 # v2020.01.18
-# a treePCA with depth 4
+# special case
+# a cwPCA tree with depth 4
 
 import numpy as np
 import sklearn
