@@ -1,28 +1,45 @@
-# v2019.10.27.2
-# <2019.11.12> old cross entropy, method of compute cross entropy has be changed
-# Alex
+# v2020.01.18
 #
-# Reference:
-#       Manimaran A, Ramanathan T, You S, et al. Visualization, Discriminability and Applications of Interpretable Saak Features[J]. 2019.
-# Compute cross entropy across each feature for feature selection
-#   input:
-#       x     -> (n, d)
-#       y     -> (n,1)
-#   return
-#             -> (d)   
+# class Cross_Entropy()
+#   Reference:
+#         Manimaran A, Ramanathan T, You S, et al. Visualization, Discriminability and Applications of Interpretable Saak Features[J]. 2019.
+#   Compute cross entropy across each feature for feature selection
+#     input:
+#         x     -> (n, d)
+#         y     -> (n,1)
+#     return
+#               -> (d)   
 
 import numpy as np 
 import math
+import sklearn
+import keras
+from sklearn.cluster import KMeans
+from sklearn.ensemble import RandomForestClassifier
+from regression import * 
 
 class Cross_Entropy():
     def __init__(self, num_class, num_bin=10):
-        self.num_class = num_class
-        self.num_bin = num_bin
+        self.num_class = (int)(num_class)
+        self.num_bin = (int)(num_bin)
 
     def bin_process(self, x ,y):
+        if np.max(x) ==  np.min(x):
+            return -1*np.ones(self.num_bin)
         x = ((x - np.min(x)) / (np.max(x) - np.min(x))) * (self.num_bin)
         mybin = np.zeros((self.num_bin, self.num_class))
         b = x.astype('int64')
+        b[b == self.num_bin] -= 1
+        mybin[b,y] += 1.
+        for l in range(0,self.num_class):
+            p = np.array(y[ y==l ]).shape[0]
+            mybin[:,l] /= (float)(p)
+        return np.argmax(mybin, axis=1)
+    
+    def kmeans_process(self, x, y):
+        kmeans = KMeans(n_clusters=self.num_bin, random_state=0).fit(x.reshape(1,-1))
+        mybin = np.zeros((self.num_bin, self.num_class))
+        b = kmeans.labels_.astype('int64')
         b[b == self.num_bin] -= 1
         mybin[b,y] += 1.
         for l in range(0,self.num_class):
@@ -34,6 +51,7 @@ class Cross_Entropy():
         prob = np.zeros((self.num_class, x.shape[1]))
         for k in range(0, x.shape[1]):
             mybin = self.bin_process(x[:,k], y[:,0])
+            #mybin = self.kmeans_process(x[:,k], y[:,0])
             for l in range(0, self.num_class):
                 p = mybin[mybin == l]
                 p = np.array(p).shape[0]
@@ -57,7 +75,59 @@ class Cross_Entropy():
             H *= class_weight.reshape(class_weight.shape[0],1) * self.num_class
         return np.sum(H, axis=0)
 
+# new cross entropy
+def KMeans_Cross_Entropy(X, Y, num_class, num_bin=32):
+    samp_num = Y.size
+    if np.unique(Y).shape[0] == 1: #alread pure
+        return 0
+    if X.shape[0] < num_bin:
+        return -1
+    kmeans = KMeans(n_clusters=num_bin, random_state=0).fit(X)
+    prob = np.zeros((num_bin, num_class))
+    for i in range(num_bin):
+        idx = (kmeans.labels_ == i)
+        tmp = Y[idx]
+        for j in range(num_class):
+            prob[i, j] = (float)(tmp[tmp == j].shape[0]) / ((float)(Y[Y==j].shape[0]) + 1e-5)
+    prob = (prob)/(np.sum(prob, axis=1).reshape(-1,1) + 1e-5)
+    true_indicator = keras.utils.to_categorical(Y, num_classes=num_class)
+    probab = prob[kmeans.labels_]
+    return sklearn.metrics.log_loss(true_indicator,probab)/math.log(num_class)
+
+# new machine learning based cross entropy
+def ML_Cross_Entropy(X, Y, num_class):
+    X, XX, Y, YY = sklearn.model_selection.train_test_split(X, Y, train_size=0.8, random_state=42, stratify=Y)
+    reg = myRegression(RandomForestClassifier(n_estimators=100, max_depth=7, verbose=0, n_jobs=-1, class_weight='balanced'),
+                        num_class)
+    reg.fit(X, Y)
+    pred = reg.predict_proba(XX)
+    pred = pred[YY.reshape(-1)]
+    #print("           <Debug Info>        train:")
+    reg.score(X, Y)
+    #print("           <Debug Info>        test:")
+    reg.score(XX, YY)
+    true_indicator = keras.utils.to_categorical(YY, num_classes=num_class)
+    return sklearn.metrics.log_loss(true_indicator, pred)/math.log(num_class)
+
+def CE(X, Y, num_class):
+    H = []
+    for i in range(X.shape[1]):
+        #H.append(ML_Cross_Entropy(X[:, i].reshape(-1, 1), Y, num_class))
+        H.append(KMeans_Cross_Entropy(X, Y, num_class, num_bin=32))
+    return np.array(H)
+
 if __name__ == "__main__":
+    import cv2
+    X = cv2.imread('se.jpg')
+    cv2.imwrite('se.jpg', X)
+    Y = cv2.imread('gt.jpg', 0)
+    Y[Y!=0] = 1
+    X = X.reshape(-1, 3)
+    Y = Y.reshape(-1, 1)
+    print(CE(X, Y, 2))
+
+    '''
+
     import time
     t0 = time.time()
     x = np.array([1,2,3,1,3,5,7,1,2,4])
@@ -67,3 +137,4 @@ if __name__ == "__main__":
     print(H)
     print('ideal: ', str([1.12576938]))
     print('Using time: ', time.time()-t0)
+    '''
