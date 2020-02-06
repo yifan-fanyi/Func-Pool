@@ -1,4 +1,4 @@
-# v2020.01.18
+# v2020.02.05
 #
 # class Cross_Entropy()
 #   Reference:
@@ -9,6 +9,9 @@
 #         y     -> (n,1)
 #     return
 #               -> (d)   
+#
+# KMeans_Cross_Entropy
+# ML_Cross_Entropy
 
 import numpy as np 
 import math
@@ -77,7 +80,6 @@ class Cross_Entropy():
 
 # new cross entropy
 def KMeans_Cross_Entropy(X, Y, num_class, num_bin=32):
-    samp_num = Y.size
     if np.unique(Y).shape[0] == 1: #alread pure
         return 0
     if X.shape[0] < num_bin:
@@ -102,18 +104,18 @@ def ML_Cross_Entropy(X, Y, num_class):
     reg.fit(X, Y)
     pred = reg.predict_proba(XX)
     pred = pred[YY.reshape(-1)]
-    #print("           <Debug Info>        train:")
     reg.score(X, Y)
-    #print("           <Debug Info>        test:")
     reg.score(XX, YY)
     true_indicator = keras.utils.to_categorical(YY, num_classes=num_class)
     return sklearn.metrics.log_loss(true_indicator, pred)/math.log(num_class)
 
-def CE(X, Y, num_class):
+def CE(X, Y, num_class, mode=1):
     H = []
     for i in range(X.shape[1]):
-        #H.append(ML_Cross_Entropy(X[:, i].reshape(-1, 1), Y, num_class))
-        H.append(KMeans_Cross_Entropy(X, Y, num_class, num_bin=32))
+        if mode == 1:
+            H.append(KMeans_Cross_Entropy(X[:, i].reshape(-1, 1), Y, num_class, num_bin=32))
+        elif mode ==1:
+            H.append(ML_Cross_Entropy(X[:, i].reshape(-1, 1), Y, num_class))     
     return np.array(H)
 
 if __name__ == "__main__":

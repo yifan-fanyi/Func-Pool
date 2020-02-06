@@ -21,18 +21,16 @@ from saab import Saab
 from pixelhop import PixelHop_Neighbour
 
 def Shrink(X, shrinkArg):
-    X = PixelHop_Neighbour(X, shrinkArg['dilate'], shrinkArg['pad'])
-    return X
+    return PixelHop_Neighbour(X, shrinkArg['dilate'], shrinkArg['pad'])
 
 def Output_Concat(X, concatArgs):
-    output = np.concatenate(X, axis=-1)
-    return output
+    return np.concatenate(X, axis=-1)
 
 def Transform(X, par, train, shrinkArg, SaabArg):
     X = Shrink(X, shrinkArg=shrinkArg)
     S = X.shape
     X = X.reshape(-1, S[-1])
-    transformed, par = Saab(None, S[-1], useDC=SaabArg['useDC'], batch=SaabArg['batch'], needBias=SaabArg['needBias']).Saab_transform(X, train=train, pca_params=par)
+    transformed, par = Saab(None, num_kernels=SaabArg['num_AC_kernels'], useDC=SaabArg['useDC'], batch=SaabArg['batch'], needBias=SaabArg['needBias']).Saab_transform(X, train=train, pca_params=par)
     transformed = transformed.reshape(S)
     return par, transformed
 
@@ -113,9 +111,9 @@ if __name__ == "__main__":
     s = [1, 321, 481, -1]
     X = X.reshape(s)
     print("Input shape: ", X.shape)
-    SaabArgs = [{'needBias':False, 'useDC':True, 'batch':None},
-                {'needBias':True, 'useDC':True, 'batch':None},
-                {'needBias':True, 'useDC':True, 'batch':None}]
+    SaabArgs = [{'num_AC_kernels': -1, 'needBias':False, 'useDC':True, 'batch':None},
+                {'num_AC_kernels': -1, 'needBias':True, 'useDC':True, 'batch':None},
+                {'num_AC_kernels': -1, 'needBias':True, 'useDC':True, 'batch':None}]
     shrinkArgs = [{'dilate':[1], 'pad':'reflect'},
                 {'dilate':[2], 'pad':'reflect'},
                 {'dilate':[4], 'pad':'reflect'}]

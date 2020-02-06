@@ -43,6 +43,8 @@ class Saab():
             pca_params = {}
             X, no = self.remove_mean(pixelhop_feature.copy(), axis=0)
             X, dc = self.remove_mean(pixelhop_feature.copy(), axis=1)
+            if self.num_kernels == -1:
+                self.num_kernels = X.shape[-1]
             pca = PCA(n_components=self.num_kernels, svd_solver='full').fit(X)
             kernels = pca.components_
             energy = pca.explained_variance_ / np.sum(pca.explained_variance_)
