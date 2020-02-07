@@ -34,11 +34,11 @@ def Transform(X, par, train, shrinkArg, SaabArg):
     transformed = transformed.reshape(S)
     return par, transformed
 
-def cwPCA_1_layer(X, train, par_cur, SaabArg, shrinkArg):
+def cwSaab_1_layer(X, train, par_cur, SaabArg, shrinkArg):
     par, transformed = Transform(X, par=par_cur, train=train, shrinkArg=shrinkArg, SaabArg=SaabArg)
     return transformed, [par], par['Energy']
 
-def cwPCA_n_layer(X, energyTH, train, par_prev, par_cur, SaabArg, shrinkArg):
+def cwSaab_n_layer(X, energyTH, train, par_prev, par_cur, SaabArg, shrinkArg):
     output, eng_cur = [], []
     S = list(X.shape)
     S[-1] = 1
@@ -71,16 +71,16 @@ def cwPCA_n_layer(X, energyTH, train, par_prev, par_cur, SaabArg, shrinkArg):
         eng_cur = np.concatenate(eng_cur, axis=0)
     return output, par_cur, eng_cur, split
     
-def cwPCA(X, train=True, par=None, depth=None, energyTH=None, SaabArgs=None, shrinkArgs=None, concatArgs=None):
+def cwSaab(X, train=True, par=None, depth=None, energyTH=None, SaabArgs=None, shrinkArgs=None, concatArgs=None):
     output, eng = [], []
     if train == True:
         par = {'depth': depth, 'energyTH': energyTH, 'SaabArgs': SaabArgs, 'shrinkArgs': shrinkArgs, 'concatArgs': concatArgs}
-        X, par_tmp, eng_tmp= cwPCA_1_layer(X, train=train, par_cur=[], SaabArg=SaabArgs[0], shrinkArg=shrinkArgs[0])
+        X, par_tmp, eng_tmp= cwSaab_1_layer(X, train=train, par_cur=[], SaabArg=SaabArgs[0], shrinkArg=shrinkArgs[0])
         output.append(X)
         eng.append(eng_tmp)
         par['Layer0'] = par_tmp
         for i in range(1, depth):
-            X, par_tmp, eng_tmp, split = cwPCA_n_layer(X, energyTH=energyTH, train=train, par_prev=par_tmp, par_cur=[], SaabArg=SaabArgs[i], shrinkArg=shrinkArgs[i])
+            X, par_tmp, eng_tmp, split = cwSaab_n_layer(X, energyTH=energyTH, train=train, par_prev=par_tmp, par_cur=[], SaabArg=SaabArgs[i], shrinkArg=shrinkArgs[i])
             if split == False:
                 par['depth'], depth = i, i
                 print("       <WARNING> Cannot futher split, actual depth: %s"%str(i))
@@ -90,11 +90,11 @@ def cwPCA(X, train=True, par=None, depth=None, energyTH=None, SaabArgs=None, shr
             par['Layer'+str(i)] = par_tmp
     else:
         depth, energyTH, shrinkArgs, SaabArgs, concatArgs = par['depth'], par['energyTH'], par['shrinkArgs'], par['SaabArgs'], par['concatArgs']
-        X, par_tmp, eng_tmp= cwPCA_1_layer(X, train=train, par_cur=par['Layer0'][0], SaabArg=SaabArgs[0], shrinkArg=shrinkArgs[0])
+        X, par_tmp, eng_tmp= cwSaab_1_layer(X, train=train, par_cur=par['Layer0'][0], SaabArg=SaabArgs[0], shrinkArg=shrinkArgs[0])
         output.append(X)
         eng.append(eng_tmp)
         for i in range(1, depth):
-            X, par_tmp, eng_tmp, split = cwPCA_n_layer(X, energyTH=energyTH, train=train, par_prev=par['Layer'+str(i-1)], par_cur=par['Layer'+str(i)], SaabArg=SaabArgs[i], shrinkArg=shrinkArgs[i])
+            X, par_tmp, eng_tmp, split = cwSaab_n_layer(X, energyTH=energyTH, train=train, par_prev=par['Layer'+str(i-1)], par_cur=par['Layer'+str(i)], SaabArg=SaabArgs[i], shrinkArg=shrinkArgs[i])
             output.append(X)
             eng.append(eng_tmp)
     for i in range(depth-1):
@@ -123,7 +123,7 @@ if __name__ == "__main__":
                 {'dilate':[4], 'pad':'reflect'},
                 {'dilate':[5], 'pad':'reflect'},
                 {'dilate':[6], 'pad':'reflect'}]
-    output, par = cwPCA(X, train=True, par=None, depth=6, energyTH=0.9,  SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArgs=None)
+    output, par = cwSaab(X, train=True, par=None, depth=6, energyTH=0.9,  SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArgs=None)
     print("train feature shape: ", output.shape)
-    output, par = cwPCA(X, train=False, par=par)
+    output, par = cwSaab(X, train=False, par=par)
     print("test feature shape: ", output.shape)
