@@ -1,18 +1,15 @@
-# v2020.02.06 avoid depth overflow
-# a generialzed version of channel wise PCA
+# v2020.02.13
+# A generialzed version of channel wise Saab
+# Current code accepts <np.array> shape(N, H, W, D) as input
+#   modify 'func:Shrink' to accept any shape(..., D)
+# Depth goal may not achieved is no nodes's energy is larger than energy threshold, (warning generates)
 #
-# Shrink: to support different type of data (image, pointcloud)
-# Output_Concat: how to concatenate features from different hop, especially when spatial shape is different
-# 
-# train: <bool> 
-# par: <dict>, parameters
-# depth: <int>, depth of tree
-# energtTH: <float>, energy threshold for stopping spliting on nodes
-# SaabArgs: <list>, ex: [{'needBias':False, 'useDC':True, 'batch':None}]
-# shrinkArgs: <list>, ex: [{'dilate':[1], 'pad':'reflect'}]
-# concatArgs: <list>, currently not used, left for future
-#
-# during testing, settings like depth, SaabArgs, shrinkArgs will be loaded from par
+# train = True:
+#   'depth', 'energyTH', 'SaabArgs', 'shrinkArgs', 'concatArgs' are needed, (len(xxArgs) should equal or larger than 'depth')
+#   will train Saab transformation and save the parameters
+# train = False:
+#   'par' is needed, others args is unnecessay
+#   other setting will be loaded from 'par'
 
 import numpy as np 
 import pickle
@@ -21,12 +18,37 @@ from saab import Saab
 from pixelhop import PixelHop_Neighbour
 
 def Shrink(X, shrinkArg):
+    '''
+    Method to collect patches for training Saab, Pooling can be added here as well
+        X: <np.array> input feature 
+        shrinkArg: <dict> arguments needed when collecting patches
+    
+    return: <np.array> shape(..., D), D is dimension of an unrolled patch
+    '''
     return PixelHop_Neighbour(X, shrinkArg['dilate'], shrinkArg['pad'])
 
 def Output_Concat(X, concatArgs):
+    '''
+    Method to concatenate feature from different Hop (ex, how to concat when shape varies from different hop)
+        X: <list> feature to be concatenated 
+        concatArgs: <dict> arguments needed when concatenating feaures
+    
+    return: <np.array>
+    '''
     return np.concatenate(X, axis=-1)
 
 def Transform(X, par, train, shrinkArg, SaabArg):
+    '''
+    Collecting patches and doing Saab transformation
+        X: <np.array> feature to be transformed
+        par: <dict> Saab parameters to transform X when train=False, else not used
+        train: <bool> indicate whether is training or testing
+        shrinkArg: <dict> passed to func 'func:Shrink'
+        SaabArg: <dict> passed to 'func:Saab'
+    
+    return: <dict> Saab parameters, 
+            <np.array> transformed feature, only last dimension may change
+    '''
     X = Shrink(X, shrinkArg=shrinkArg)
     S = X.shape
     X = X.reshape(-1, S[-1])
@@ -35,10 +57,47 @@ def Transform(X, par, train, shrinkArg, SaabArg):
     return par, transformed
 
 def cwSaab_1_layer(X, train, par_cur, SaabArg, shrinkArg):
-    par, transformed = Transform(X, par=par_cur, train=train, shrinkArg=shrinkArg, SaabArg=SaabArg)
-    return transformed, [par], par['Energy']
+    '''
+    First layer of cwSaab
+        X: <np.array> 
+        train: <bool> indicate whether is training or testing
+        par_cur: <list of dict> Saab parameters to transform X when train=False, else not used
+        shrinkArg: <dict>
+        SaabArg: <dict>
+    
+    return: <np.array> transformed feature, only last dimension may change, 
+            <list of dict> Saab parameters 
+            <np.array> shape(D) energy for each kernel
+    '''
+    S = list(X.shape)
+    S[-1] = 1
+    X = np.moveaxis(X, -1, 0)
+    if train == True:
+        par_cur = []
+    eng = []
+    for i in range(0, X.shape[-1]):
+        X_tmp = X[i].reshape(S)
+        par, transformed = Transform(X_tmp, par=par_cur, train=train, shrinkArg=shrinkArg, SaabArg=SaabArg)
+        par_cur.append(par)
+        eng.append(par['Energy'])
+    return transformed, par_cur, np.concatenate(eng, axis=0)
 
 def cwSaab_n_layer(X, energyTH, train, par_prev, par_cur, SaabArg, shrinkArg):
+    '''
+    n^th layer of cwSaab
+        X: <np.array> shape(..., D)
+        energyTH: <float> energy threshold
+        train: <bool> indicate whether is training or testing
+        par_prev: <list of dict> Saab parameter of previous hop
+        par_cur: <list of dict> Saab parameters to transform X when train=False, else not used
+        shrinkArg: <dict>
+        SaabArg: <dict>
+
+    return: <np.array> transformed feature, only last dimension may change, 
+            <list of dict> Saab parameters 
+            <np.array> shape(D) energy for each kernel
+            <bool>: whether this hop contain new nodes
+    '''
     output, eng_cur = [], []
     S = list(X.shape)
     S[-1] = 1
@@ -71,7 +130,21 @@ def cwSaab_n_layer(X, energyTH, train, par_prev, par_cur, SaabArg, shrinkArg):
         eng_cur = np.concatenate(eng_cur, axis=0)
     return output, par_cur, eng_cur, split
     
-def cwSaab(X, train=True, par=None, depth=None, energyTH=None, SaabArgs=None, shrinkArgs=None, concatArgs=None):
+def cwSaab(X, train, par=None, depth=None, energyTH=None, SaabArgs=None, shrinkArgs=None, concatArgs=None):
+    '''
+    main function
+        X: <np.array> shape(..., D)
+        train: <bool> indicate whether is training or testing
+        par: <dict> parameter used when train=False
+        depth: <int> depth of tree
+        energyTH: <float> energy threshold
+        shrinkArg: <list of dict> arguments for each hop
+        SaabArg: <list of dict> arguments for each hop
+        concatArgs: <list of dict> arguments for each hop
+
+    return: <np.array> transformed feature, only last dimension may change, 
+            <dict> Saab parameters 
+    '''
     output, eng = [], []
     if train == True:
         par = {'depth': depth, 'energyTH': energyTH, 'SaabArgs': SaabArgs, 'shrinkArgs': shrinkArgs, 'concatArgs': concatArgs}
@@ -106,23 +179,16 @@ def cwSaab(X, train=True, par=None, depth=None, energyTH=None, SaabArgs=None, sh
     return output, par
 
 if __name__ == "__main__":
+    # example useage
     import cv2
     X = cv2.imread('./data/test.jpg')
     s = [1, 321, 481, -1]
     X = X.reshape(s)
     print("Input shape: ", X.shape)
     SaabArgs = [{'num_AC_kernels': -1, 'needBias':False, 'useDC':True, 'batch':None},
-                {'num_AC_kernels': -1, 'needBias':True, 'useDC':True, 'batch':None},
-                {'num_AC_kernels': -1, 'needBias':True, 'useDC':True, 'batch':None},
-                {'num_AC_kernels': -1, 'needBias':True, 'useDC':True, 'batch':None},
-                {'num_AC_kernels': -1, 'needBias':True, 'useDC':True, 'batch':None},
                 {'num_AC_kernels': -1, 'needBias':True, 'useDC':True, 'batch':None}]
     shrinkArgs = [{'dilate':[1], 'pad':'reflect'},
-                {'dilate':[2], 'pad':'reflect'},
-                {'dilate':[3], 'pad':'reflect'},
-                {'dilate':[4], 'pad':'reflect'},
-                {'dilate':[5], 'pad':'reflect'},
-                {'dilate':[6], 'pad':'reflect'}]
+                {'dilate':[2], 'pad':'reflect'}]
     output, par = cwSaab(X, train=True, par=None, depth=6, energyTH=0.9,  SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArgs=None)
     print("train feature shape: ", output.shape)
     output, par = cwSaab(X, train=False, par=par)
