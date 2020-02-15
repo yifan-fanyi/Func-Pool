@@ -1,10 +1,11 @@
-#v2020.01.23
+#v2020.02.15
 import keras
 import numpy as np
 import sklearn
 from numpy import linalg as LA
 
-# map [1,5,7] to [0,1,2]
+# solve cases with missing class
+# ex, map [1,5,7] to [0,1,2]
 def mapping(label, mydict=None, train=True):
     res = []
     label = label.reshape(-1)

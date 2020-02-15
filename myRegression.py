@@ -1,4 +1,12 @@
-# 2019.12.12.v1
+# 2020.02.15 
+#
+# regression on subspace
+# particular designed for encounter missing class in this subspace
+# if one class do not exists in training data, probability for this class would be zeros under anytime
+#
+#   regressor, a regressor or classifier, must have methods named 'predict' or 'predict_proba'
+#   num_class: total number of class in dataset
+
 import numpy as np 
 from sklearn.metrics import accuracy_score
 import warnings
@@ -47,7 +55,7 @@ class myRegression():
             pred = self.predict_proba(X)
             pred = np.argmax(pred, axis=1)
             score = accuracy_score(pred, Y)
-        print("           <Debug Info>        accuracy on node: %s"%str(score))
+        #print("           <Debug Info>        accuracy on node: %s"%str(score))
 
 if __name__ == "__main__":
     import cv2

@@ -1,4 +1,4 @@
-# v2019.10.25
+# v2020.02.15
 import numpy as np 
 import math
 import cv2
@@ -19,20 +19,17 @@ def AvgPooling(x):
 
 def Project_concat(feature):
     dim = 0
-    for i in range(len(feature)):
-        dim += feature[i].shape[3]
+    for i in range(0, len(feature)):
+        dim += feature[i].shape[-1]
         feature[i] = np.moveaxis(feature[i],0,2)
     result = np.zeros((feature[0].shape[0],feature[0].shape[1],feature[0].shape[2],dim))
     for i in range(0,feature[0].shape[0]):
         for j in range(0,feature[0].shape[1]):
-            scale = 1.
+            last = feature[0].shape[0]
+            tmp = []
             for fea in feature:
-                if scale == 1:
-                    tmp = fea[i,j]
-                else:
-                    #print(i,j,i//scale,j//scale)
-                    tmp = np.concatenate((tmp, fea[int(i//scale),int(j//scale)]), axis=1)
-                scale *= 2
-            result[i,j] = tmp
+                scale = last/ fea.shape[0]
+                tmp.append(fea[int(i/scale),int(j/scale)])
+            result[i,j] = np.concatenate(tmp, axis=1)
     result = np.moveaxis(result, 2, 0)
     return result

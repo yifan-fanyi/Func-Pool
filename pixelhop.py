@@ -12,7 +12,7 @@
 ## optional:
 ##   batch: <int/None> minbatch for saving memory 
 #
-# Pixelhop: multi layer Pixelhop_Unit
+# Pixelhop: multi layer Pixelhop_Unit no padding involved
 ##   X: same above
 ##   train: same above
 ##   pars: <dict> save par from each PixelHop_Unit, ex {'Layer0':par above}
@@ -29,7 +29,7 @@
 import numpy as np 
 import pickle
 
-from saab import Saab
+from .saab import Saab
 
 def PixelHop_Neighbour(feature, dilate, pad):
     dilate = np.array(dilate)

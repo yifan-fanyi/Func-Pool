@@ -14,7 +14,7 @@ from sklearn.cluster import MiniBatchKMeans, KMeans
 from collections import Counter
 import matplotlib.pyplot as plt
 
-from framework.regression import myRegression
+from .myRegression import myRegression
 import warnings
 warnings.filterwarnings('ignore')
 
