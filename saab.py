@@ -1,4 +1,4 @@
-# v2020.01.18 
+# v2020.02.19
 
 # Saab transformation
 # modeiled from https://github.com/davidsonic/Interpretable_CNN
@@ -41,8 +41,8 @@ class Saab():
     def Saab_transform(self, pixelhop_feature, train=True, pca_params=None): 
         if train == True:
             pca_params = {}
-            X, no = self.remove_mean(pixelhop_feature.copy(), axis=0)
-            X, dc = self.remove_mean(pixelhop_feature.copy(), axis=1)
+            X, mean0 = self.remove_mean(pixelhop_feature.copy(), axis=0)
+            X, dc = self.remove_mean(X.copy(), axis=1)
             if self.num_kernels == -1:
                 self.num_kernels = X.shape[-1]
             pca = PCA(n_components=self.num_kernels, svd_solver='full').fit(X)
@@ -59,10 +59,12 @@ class Saab():
             pca_params['Kernels'] = kernels
             pca_params['Energy'] = energy
             pca_params['Bias'] = bias
+            pca_params['Mean0'] = mean0
         else:
             kernels = pca_params['Kernels']
             energy = pca_params['Energy']
             bias = pca_params['Bias']
+            pixelhop_feature -= pca_params['Mean0']
         if self.needBias == True:
             pixelhop_feature += bias
         transformed = self.Transform(pixelhop_feature, kernels) 
