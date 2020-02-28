@@ -1,5 +1,5 @@
 # v2020.02.15
-# A generialzed version of channel wise Saab
+# A generalized version of channel wise Saab
 # Current code accepts <np.array> shape(..., D) as input
 #
 # Depth goal may not achieved is no nodes's energy is larger than energy threshold, (warning generates)
@@ -16,7 +16,7 @@
 import numpy as np 
 import pickle
 
-from .saab import Saab
+from saab import Saab
 
 def Transform(X, par, train, shrinkArg, SaabArg):
     '''
@@ -191,8 +191,9 @@ if __name__ == "__main__":
         return np.concatenate(X, axis=-1)
 
     # read data
-    X = cv2.imread('./data/test.jpg')
-    s = [1, 321, 481, -1]
+    X = [cv2.imread('./data/test.jpg')]#, cv2.imread('./data/se.jpg')]
+    X = np.array(X)
+    s = [-1, 321, 481, 3]
     X = X.reshape(s)
     print("Input shape: ", X.shape)
 
@@ -204,7 +205,7 @@ if __name__ == "__main__":
     concatArg = {'func':Concat}
 
     # run
-    output, par = cwSaab(X, train=True, par=None, depth=2, energyTH=0.9,  SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg)
+    output, par = cwSaab(X, train=True, par=None, depth=2, energyTH=0.001,  SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg)
     print("train feature shape: ", output.shape)
     output, par = cwSaab(X, train=False, par=par)
     print("test feature shape: ", output.shape)

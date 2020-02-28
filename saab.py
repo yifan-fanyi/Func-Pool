@@ -39,6 +39,7 @@ class Saab():
         return transformed
 
     def Saab_transform(self, pixelhop_feature, train=True, pca_params=None): 
+        pixelhop_feature = pixelhop_feature.astype('float32')
         if train == True:
             pca_params = {}
             X, mean0 = self.remove_mean(pixelhop_feature.copy(), axis=0)

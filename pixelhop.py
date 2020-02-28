@@ -29,7 +29,7 @@
 import numpy as np 
 import pickle
 
-from .saab import Saab
+from saab import Saab
 
 def PixelHop_Neighbour(feature, dilate, pad):
     dilate = np.array(dilate)
