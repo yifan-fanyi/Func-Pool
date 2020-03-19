@@ -188,7 +188,12 @@ if __name__ == "__main__":
         #   concatArg: <dict> arguments needed to call outside methods
         #
         # return <any> it would become the output of tree
-        return np.concatenate(X, axis=-1)
+        X = np.concatenate(X, axis=-1)
+        X = np.moveaxis(X, 0, -1)
+        X = X.reshape(321*481, -1)
+        X = np.max(X, axis=0)
+        X = X.reshape(1, -1)
+        return X
 
     # read data
     X = [cv2.imread('./data/test.jpg')]#, cv2.imread('./data/se.jpg')]
@@ -209,3 +214,5 @@ if __name__ == "__main__":
     print("train feature shape: ", output.shape)
     output, par = cwSaab(X, train=False, par=par)
     print("test feature shape: ", output.shape)
+    for i in range(output.shape[1]):
+        print(output[0,i])
