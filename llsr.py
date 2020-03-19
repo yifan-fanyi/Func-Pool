@@ -1,13 +1,12 @@
-#v2020.03.19
+#v2020.03.19v2
 import numpy as np
-import scipy
 from sklearn.metrics import accuracy_score
 
 class LLSR():
-    def __init__(self, weight=None, bias=None, onehot=False):
+    def __init__(self, weight=None, bias=None, onehot=True):
         self.weight = weight
         self.bias = bias
-        self.onehot = False
+        self.onehot = onehot
 
     def fit(self, X, Y):
         if self.onehot == True:
@@ -16,17 +15,16 @@ class LLSR():
             Y = y.copy()
         A = np.ones((X.shape[0], 1))
         X = np.concatenate((A, X), axis=1)
-        weight = scipy.linalg.lstsq(X, Y)[0]       
-        self.weight = weight[1:weight.shape[0]]
-        self.bias = weight[0].reshape(1, -1)
+        self.weight = np.matmul(np.linalg.pinv(X), Y)
 
     def predict(self, X):
         X = self.predict_proba(X)
         return np.argmax(X, axis=1)
 
     def predict_proba(self, X):
-        X = np.matmul(X, self.weight)
-        return X + self.bias
+        A = np.ones((X.shape[0], 1))
+        X = np.concatenate((A, X), axis=1)
+        return np.matmul(X, self.weight)
 
     def score(self, X, Y):
         pred = self.predict(X)
@@ -43,7 +41,7 @@ if __name__ == "__main__":
     print(" input feature shape: %s"%str(X.shape))
     X_train, X_test, y_train, y_test = train_test_split(X, digits.target, test_size=0.2,  stratify=digits.target)
     
-    clf = LLSR()
+    clf = LLSR(onehot=True)
     clf.fit(X_train, y_train)
     print(" --> train acc: %s"%str(clf.score(X_train, y_train)))
     print(" --> test acc: %s"%str(clf.score(X_test, y_test)))
