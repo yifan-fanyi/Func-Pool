@@ -169,7 +169,8 @@ def cwSaab(X, train, par=None, depth=None, energyTH=None, SaabArgs=None, shrinkA
 
 if __name__ == "__main__":
     # example useage
-    import cv2
+    from sklearn.linear_model import LogisticRegression
+    from sklearn import datasets
     from pixelhop import PixelHop_Neighbour
 
     # example callback function for collecting patches
@@ -189,30 +190,25 @@ if __name__ == "__main__":
         #
         # return <any> it would become the output of tree
         X = np.concatenate(X, axis=-1)
-        X = np.moveaxis(X, 0, -1)
-        X = X.reshape(321*481, -1)
-        X = np.max(X, axis=0)
-        X = X.reshape(1, -1)
         return X
 
     # read data
-    X = [cv2.imread('./data/test.jpg')]#, cv2.imread('./data/se.jpg')]
-    X = np.array(X)
-    s = [-1, 321, 481, 3]
-    X = X.reshape(s)
-    print("Input shape: ", X.shape)
+
+    print(" \n> This is a test enample: ")
+    digits = datasets.load_digits()
+    X = digits.images.reshape((len(digits.images), 8, 8, 1))
+    print(" input feature shape: %s"%str(X.shape))
 
     # set args
     SaabArgs = [{'num_AC_kernels':-1, 'needBias':False, 'useDC':True, 'batch':None},
                 {'num_AC_kernels':-1, 'needBias':True, 'useDC':True, 'batch':None}]
     shrinkArgs = [{'func':Shrink, 'dilate':[1], 'pad':'reflect'},
-                {'func': Shrink, 'dilate':[2], 'pad':'reflect'}]
+                {'func': Shrink, 'dilate':[1], 'pad':'reflect'}]
     concatArg = {'func':Concat}
 
     # run
     output, par = cwSaab(X, train=True, par=None, depth=2, energyTH=0.001,  SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg)
-    print("train feature shape: ", output.shape)
+    print(" --> train feature shape: ", output.shape)
     output, par = cwSaab(X, train=False, par=par)
-    print("test feature shape: ", output.shape)
-    for i in range(output.shape[1]):
-        print(output[0,i])
+    print(" --> test feature shape: ", output.shape)
+    print("------- DONE -------\n")

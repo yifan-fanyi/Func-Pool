@@ -12,28 +12,36 @@ from sklearn.metrics import accuracy_score
 import warnings
 warnings.filterwarnings('ignore')
 
-class myRegression():
+class myLearner():
     def __init__(self, learner, num_class):
         self.learner = learner
         self.num_class = num_class
         self.class_list = {}
         self.oneclass = False
     
-    def mapping(self, Y, train=True):
-        res = []
-        Y = Y.reshape(-1)
+    def mapping(self, Y, train=True, probability=False):
+        c, res = 0, []
+        Y = Y.reshape(Y.shape[0], -1)
         if train == True:
-            c = 0
             for i in range(np.array(Y).shape[0]):
-                if Y[i] not in self.class_list:
-                    self.class_list[Y[i]] = c
-                    c+=1
-                res.append(self.class_list[Y[i]])
+                if Y[i, 0] not in self.class_list:
+                    self.class_list[Y[i,0]] = c
+                    c += 1
+                res.append(self.class_list[Y[i, 0]])
         else:
-            for i in range(np.array(Y).shape[0]):
-                for d in self.class_list.keys():
-                    if self.class_list[d] == Y[i]:
-                        res.append(d)
+            if probability == False:
+                for i in range(np.array(Y).shape[0]):
+                    for d in self.class_list.keys():
+                        if self.class_list[d] == Y[i, 0]:
+                            res.append(d)
+            else:
+                res = np.zeros((Y.shape[0], self.num_class))
+                for i in range(np.array(Y).shape[0]):
+                    c = 0
+                    for j in range(self.num_class):
+                        if j in self.class_list.keys():
+                            res[i, j] = Y[i, c]
+                            c += 1
         return np.array(res)
 
     def fit(self, X, Y):
@@ -50,6 +58,13 @@ class myRegression():
             tmp_pred = np.zeros((X.shape[0]))
         return self.mapping(tmp_pred, train=False)
 
+    def predict_proba(self, X): 
+        if self.oneclass == False:
+            tmp_pred = self.learner.predict_proba(X)
+        else:
+            tmp_pred = np.ones((X.shape[0], 1))
+        return self.mapping(tmp_pred, train=False, probability=True)
+
     def score(self, X, Y):
         return accuracy_score(Y, self.predict(X)) 
 
@@ -57,11 +72,14 @@ if __name__ == "__main__":
     from sklearn.linear_model import LogisticRegression
     from sklearn import datasets
     from sklearn.model_selection import train_test_split
+    
     print(" \n> This is a test enample: ")
     digits = datasets.load_digits()
     X = digits.images.reshape((len(digits.images), -1))
+    print(" input feature shape: %s"%str(X.shape))
     X_train, X_test, y_train, y_test = train_test_split(X, digits.target, test_size=0.5, shuffle=False)
-    clf = myRegression(LogisticRegression(random_state=0, solver='liblinear', multi_class='ovr', n_jobs=20, max_iter=1000),
+    
+    clf = myLearner(LogisticRegression(random_state=0, solver='liblinear', multi_class='ovr', n_jobs=20, max_iter=1000),
           10)
     clf.fit(X_train, y_train)
     print(" --> train acc: %s"%str(clf.score(X_train, y_train)))

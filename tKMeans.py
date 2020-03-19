@@ -81,16 +81,17 @@ class tKMeans():
         self.predict(X)
         return accuracy_score(Y, self.predict_label)
             
-################################# Test #################################
 if __name__ == "__main__":
     from sklearn.linear_model import LogisticRegression
     from sklearn import datasets
     from sklearn.model_selection import train_test_split
+    
     print(" \n> This is a test enample: ")
     digits = datasets.load_digits()
-    print(digits.images.shape)
     X = digits.images.reshape((len(digits.images), -1))
+    print(" input feature shape: %s"%str(X.shape))
     X_train, X_test, y_train, y_test = train_test_split(X, digits.target, test_size=0.2,  stratify=digits.target)
+    
     clf = tKMeans(X_train, y_train, MSE=20, learner=LogisticRegression(random_state=0, solver='liblinear', multi_class='ovr', n_jobs=20, max_iter=1000))
     clf.fit(X_train, y_train)
     print(" --> train acc: %s"%str(clf.score(X_train, y_train)))

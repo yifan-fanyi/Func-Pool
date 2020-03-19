@@ -95,21 +95,20 @@ def Pixelhop(X, train=False, pars=None, depth=None, dilates=[1], pads=None, Saab
     return X, pars
 
 if __name__ == "__main__":
-    import cv2
-    print("------- Test <Pixelhop_Unit>")
+    from sklearn.linear_model import LogisticRegression
+    from sklearn import datasets
+    
+    # read data
+    print(" \n> This is a test enample: ")
+    digits = datasets.load_digits()
+    X = digits.images.reshape((len(digits.images), 8, 8, 1))
+    print(" input feature shape: %s"%str(X.shape))
     SaabArg = {'num_AC_kernels':-1, 'needBias':False, 'useDC':True, 'batch':None}
-    X = cv2.imread('./data/test.jpg')
-    X = X.reshape(1, X.shape[0], X.shape[1], X.shape[2]).astype('float64')
-    X1, par = PixelHop_Unit(X, train=True, dilate=[1], pad='reflect', par=None, SaabArg=SaabArg, batch=None)
-    print(X1.shape)
-    X2, par = PixelHop_Unit(X, train=False, par=par, batch=None)
-    print(X2.shape)
 
-    print("------- Test <Pixelhop>")
-    pads = ['reflect', 'reflect']
-    dilates = [1, 3]
-    SaabArgs = [{'num_AC_kernels':-1, 'needBias':False, 'useDC':True, 'batch':None}, {'num_AC_kernels':7, 'needBias':False, 'useDC':True, 'batch':None}]
-    X1, par = Pixelhop(X, train=True, pars=None, depth=2, dilates=dilates, pads=pads, SaabArgs=SaabArgs, batch=None)
-    print(X1.shape, par.keys())
-    X2, par = Pixelhop(X, train=False, pars=par, batch=None)
-    print(X2.shape)
+    # run
+    X1, par = PixelHop_Unit(X, train=True, dilate=[1], pad='reflect', par=None, SaabArg=SaabArg, batch=None)
+    print(" --> train feature shape: ", X1.shape)
+    X2, par = PixelHop_Unit(X, train=False, par=par, batch=None)
+    print(" --> test feature shape: ", X2.shape)
+    print("------- DONE -------\n")
+
