@@ -38,23 +38,23 @@ class LAG():
 
     def fit(self, X, Y, batch_size=None):
         assert (len(self.num_clusters) >= np.unique(Y).shape[0]), "'len(num_cluster)' must larger than class number!"
-        labels_train = self.compute_target_(X, Y, batch_size=batch_size)    
+        Yt = self.compute_target_(X, Y, batch_size=batch_size)    
         if self.encode == 'distance':
-            labels_train_onehot = np.zeros((labels_train.shape[0], self.clus_labels.shape[0]))
-            for i in range(labels_train.shape[0]):
+            Yt_onehot = np.zeros((Yt.shape[0], self.clus_labels.shape[0]))
+            for i in range(Yt.shape[0]):
                 gt = Y[i].copy()
                 dis = euclidean_distances(X[i].reshape(1,-1), self.centroid[self.clus_labels == gt]).reshape(-1)
-                dis = dis / (dis.min() + 1e-15)
-                p_dis = np.exp(-dis*self.alpha)
-                p_dis = p_dis / p_dis.sum()
-                labels_train_onehot[i, self.clus_labels == gt] = p_dis            
+                dis = dis / (np.min(dis) + 1e-15)
+                p_dis = np.exp(-dis * self.alpha)
+                p_dis = p_dis / np.sum(p_dis)
+                Yt_onehot[i, self.clus_labels == gt] = p_dis            
         elif self.encode == 'onehot':
-            labels_train_onehot = np.zeros((X.shape[0], np.unique(labels_train).shape[0]))
-            labels_train_onehot[np.arange(Y.size), labels_train] = 1
+            Yt_onehot = np.zeros((X.shape[0], np.unique(Yt).shape[0]))
+            Yt_onehot[np.arange(Y.size), Yt] = 1
         else:
             print("       <Warning>        Using raw label for learner.")
-            labels_train_onehot = labels_train
-        self.learner.fit(X, labels_train_onehot)
+            Yt_onehot = Yt
+        self.learner.fit(X, Yt_onehot)
         
     def predict(self, X):
         return self.learner.predict(X)
@@ -67,10 +67,10 @@ class LAG():
         X = self.predict_proba(X)
         pred_labels = np.zeros((X.shape[0], len(np.unique(Y))))
         for km_i in range(len(np.unique(Y))):
-            pred_labels[:,km_i] = X[:, self.clus_labels==km_i].sum(1)
+            pred_labels[:, km_i] = np.sum(X[:, self.clus_labels==km_i], axis=1)
         pred_labels = np.argmax(pred_labels, axis=1)
-        idx = pred_labels == Y.reshape(-1)
-        return 1. * np.count_nonzero(idx) / Y.shape[0]
+        idx = (pred_labels == Y.reshape(-1))
+        return np.count_nonzero(idx) / Y.shape[0]
 
 if __name__ == "__main__":
     from sklearn.linear_model import LogisticRegression
