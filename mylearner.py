@@ -18,6 +18,7 @@ class myLearner():
         self.num_class = num_class
         self.class_list = {}
         self.oneclass = False
+        self.trained = False
     
     def mapping(self, Y, train=True, probability=False):
         c, res = 0, []

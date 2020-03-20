@@ -3,10 +3,10 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 
 class LLSR():
-    def __init__(self, weight=None, bias=None, onehot=True):
-        self.weight = weight
-        self.bias = bias
+    def __init__(self, onehot=True):
         self.onehot = onehot
+        self.weight = []
+        self.trained = False
 
     def fit(self, X, Y):
         if self.onehot == True:
@@ -16,17 +16,21 @@ class LLSR():
         A = np.ones((X.shape[0], 1))
         X = np.concatenate((A, X), axis=1)
         self.weight = np.matmul(np.linalg.pinv(X), Y)
+        self.trained = True
 
     def predict(self, X):
+        assert (self.trained == True), "Must fit this LLSR first!"
         X = self.predict_proba(X)
         return np.argmax(X, axis=1)
 
     def predict_proba(self, X):
+        assert (self.trained == True), "Must fit this LLSR first!"
         A = np.ones((X.shape[0], 1))
         X = np.concatenate((A, X), axis=1)
         return np.matmul(X, self.weight)
 
     def score(self, X, Y):
+        assert (self.trained == True), "Must fit this LLSR first!"
         pred = self.predict(X)
         return accuracy_score(Y, pred)
     

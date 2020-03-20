@@ -1,9 +1,6 @@
-# v2020.03.20
+# v2020.03.19v2
 # label assistant regression
 import numpy as np
-import time
-import scipy
-import keras
 from sklearn import preprocessing 
 from sklearn.cluster import MiniBatchKMeans, KMeans
 from sklearn.metrics.pairwise import euclidean_distances
@@ -11,11 +8,11 @@ import warnings
 warnings.filterwarnings('ignore')
 
 class LAG():
-    def __init__(self, encode='onehot', num_clusters=[10,10], alpha=5, par={}, learner=None):
+    def __init__(self, learner, encode='onehot', num_clusters=[10,10], alpha=5, par={}):
+        self.learner = learner
         self.encode = encode 
         self.num_clusters = num_clusters 
         self.alpha = alpha
-        self.learner = learner
         self.clus_labels = []
         self.centroid = []
         
@@ -23,8 +20,8 @@ class LAG():
         Y = Y.reshape(-1)
         class_list = np.unique(Y)
         labels = np.zeros((X.shape[0]))
-        self.clus_labels = np.zeros((np.sum(np.array(self.num_clusters)),))
-        self.centroid = np.zeros((np.sum(np.array(self.num_clusters)), X.shape[1]))
+        self.clus_labels = np.zeros((np.sum(self.num_clusters),))
+        self.centroid = np.zeros((np.sum(self.num_clusters), X.shape[1]))
         start = 0
         for i in range(len(class_list)):
             ID = class_list[i]
@@ -37,9 +34,10 @@ class LAG():
             self.clus_labels[start:start+self.num_clusters[i]] = ID
             self.centroid[start:start+self.num_clusters[i]] = kmeans.cluster_centers_
             start += self.num_clusters[i]
-        return labels
+        return labels.astype('int32')
 
     def fit(self, X, Y, batch_size=None):
+        assert (len(self.num_clusters) >= np.unique(Y).shape[0]), "'len(num_cluster)' must larger than class number!"
         labels_train = self.compute_target_(X, Y, batch_size=batch_size)    
         if self.encode == 'distance':
             labels_train_onehot = np.zeros((labels_train.shape[0], self.clus_labels.shape[0]))
@@ -51,11 +49,11 @@ class LAG():
                 p_dis = p_dis / p_dis.sum()
                 labels_train_onehot[i, self.clus_labels == gt] = p_dis            
         elif self.encode == 'onehot':
-            labels_train_onehot = keras.utils.to_categorical(labels_train, np.unique(labels_train).shape[0])     
+            labels_train_onehot = np.zeros((X.shape[0], np.unique(labels_train).shape[0]))
+            labels_train_onehot[np.arange(Y.size), labels_train] = 1
         else:
-            print("       <Warning>        Using raw label for LLSR.")
+            print("       <Warning>        Using raw label for learner.")
             labels_train_onehot = labels_train
-
         self.learner.fit(X, labels_train_onehot)
         
     def predict(self, X):
@@ -65,6 +63,7 @@ class LAG():
         return self.learner.predict_proba(X)
     
     def score(self, X, Y):
+        print("       <Warning>        Currently only support LLSR.")
         X = self.predict_proba(X)
         pred_labels = np.zeros((X.shape[0], len(np.unique(Y))))
         for km_i in range(len(np.unique(Y))):
