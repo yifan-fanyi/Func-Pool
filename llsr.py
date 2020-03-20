@@ -27,7 +27,8 @@ class LLSR():
         assert (self.trained == True), "Must fit this LLSR first!"
         A = np.ones((X.shape[0], 1))
         X = np.concatenate((A, X), axis=1)
-        return np.matmul(X, self.weight)
+        pred = np.matmul(X, self.weight)
+        return (pred - np.min(pred, axis=1, keepdims=True))/ (np.max(pred, axis=1, keepdims=True) - np.min(pred, axis=1, keepdims=True) + 1e-15)
 
     def score(self, X, Y):
         assert (self.trained == True), "Must fit this LLSR first!"
@@ -35,7 +36,6 @@ class LLSR():
         return accuracy_score(Y, pred)
     
 if __name__ == "__main__":
-    from sklearn.linear_model import LogisticRegression
     from sklearn import datasets
     from sklearn.model_selection import train_test_split
     
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     digits = datasets.load_digits()
     X = digits.images.reshape((len(digits.images), -1))
     print(" input feature shape: %s"%str(X.shape))
-    X_train, X_test, y_train, y_test = train_test_split(X, digits.target, test_size=0.2,  stratify=digits.target)
+    X_train, X_test, y_train, y_test = train_test_split(X, digits.target, test_size=0.2, stratify=digits.target)
     
     clf = LLSR(onehot=True)
     clf.fit(X_train, y_train)

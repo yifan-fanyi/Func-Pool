@@ -103,7 +103,6 @@ class Cross_Entropy():
 
 if __name__ == "__main__":
     from sklearn.ensemble import RandomForestClassifier
-    from sklearn.linear_model import LogisticRegression
     from sklearn import datasets
     from sklearn.model_selection import train_test_split
     

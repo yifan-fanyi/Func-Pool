@@ -24,6 +24,7 @@ class myLearner():
         c, res = 0, []
         Y = Y.reshape(Y.shape[0], -1)
         if train == True:
+            self.class_list = {}
             for i in range(np.array(Y).shape[0]):
                 if Y[i, 0] not in self.class_list:
                     self.class_list[Y[i,0]] = c
@@ -41,7 +42,7 @@ class myLearner():
                     c = 0
                     for j in range(self.num_class):
                         if j in self.class_list.keys():
-                            res[i, j] = Y[i, c]
+                            res[i, j] = Y[i, self.class_list[j]]
                             c += 1
         return np.array(res)
 
@@ -51,8 +52,10 @@ class myLearner():
             self.oneclass = True
         else:
             self.learner.fit(X, Y)
+        self.trained = True
 
     def predict(self, X): 
+        assert (self.trained == True), "Must fit this learner first!"
         if self.oneclass == False:
             tmp_pred = self.learner.predict(X).reshape(-1)
         else:
@@ -60,6 +63,7 @@ class myLearner():
         return self.mapping(tmp_pred, train=False)
 
     def predict_proba(self, X): 
+        assert (self.trained == True), "Must fit this learner first!"
         if self.oneclass == False:
             tmp_pred = self.learner.predict_proba(X)
         else:
@@ -67,10 +71,11 @@ class myLearner():
         return self.mapping(tmp_pred, train=False, probability=True)
 
     def score(self, X, Y):
+        assert (self.trained == True), "Must fit this learner first!"
         return accuracy_score(Y, self.predict(X)) 
 
 if __name__ == "__main__":
-    from sklearn.linear_model import LogisticRegression
+    from sklearn.svm import SVC
     from sklearn import datasets
     from sklearn.model_selection import train_test_split
     
@@ -78,10 +83,9 @@ if __name__ == "__main__":
     digits = datasets.load_digits()
     X = digits.images.reshape((len(digits.images), -1))
     print(" input feature shape: %s"%str(X.shape))
-    X_train, X_test, y_train, y_test = train_test_split(X, digits.target, test_size=0.5, shuffle=False)
+    X_train, X_test, y_train, y_test = train_test_split(X, digits.target, test_size=0.2, stratify=digits.target)
     
-    clf = myLearner(LogisticRegression(random_state=0, solver='liblinear', multi_class='ovr', n_jobs=20, max_iter=1000),
-          10)
+    clf = myLearner(SVC(gamma='scale', probability=True), 10)
     clf.fit(X_train, y_train)
     print(" --> train acc: %s"%str(clf.score(X_train, y_train)))
     print(" --> test acc.: %s"%str(clf.score(X_test, y_test)))

@@ -86,7 +86,6 @@ def PixelHop_Unit(X, train=True, par=None, dilate=[1], pad='reflect', SaabArg=No
     return X, par
 
 if __name__ == "__main__":
-    from sklearn.linear_model import LogisticRegression
     from sklearn import datasets
     
     # read data

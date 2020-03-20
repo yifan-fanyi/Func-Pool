@@ -130,7 +130,6 @@ class cwSaab():
 
 if __name__ == "__main__":
     # example useage
-    from sklearn.linear_model import LogisticRegression
     from sklearn import datasets
     from pixelhop import PixelHop_Neighbour
 

@@ -1,7 +1,7 @@
-# v2020.03.19v2
+# 2020.03.19v2
 # label assistant regression
+# modified from Yueru
 import numpy as np
-from sklearn import preprocessing 
 from sklearn.cluster import MiniBatchKMeans, KMeans
 from sklearn.metrics.pairwise import euclidean_distances
 import warnings
@@ -73,9 +73,9 @@ class LAG():
         return np.count_nonzero(idx) / Y.shape[0]
 
 if __name__ == "__main__":
-    from sklearn.linear_model import LogisticRegression
     from sklearn import datasets
     from sklearn.model_selection import train_test_split
+    from llsr import LLSR
 
     print(" \n> This is a test enample: ")
     digits = datasets.load_digits()
@@ -83,7 +83,6 @@ if __name__ == "__main__":
     print(" input feature shape: %s"%str(X.shape))
     X_train, X_test, y_train, y_test = train_test_split(X, digits.target, test_size=0.2,  stratify=digits.target)
 
-    from llsr import LLSR
     clf = LAG(encode='distance', num_clusters=[2,2,2,2,2,2,2,2,2,2], alpha=5, learner=LLSR(onehot=False))  
     clf.fit(X_train, y_train)
     print(" --> train acc: %s"%str(clf.score(X_train, y_train)))

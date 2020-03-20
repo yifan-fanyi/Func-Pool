@@ -14,6 +14,9 @@ echo -e "\033[92m------- <mylearner.py>\033[0m"
 python3 mylearner.py
 echo -e "\033[92m------- <lag.py>\033[0m"
 python3 lag.py
+echo -e "\033[33m########### Test Activate Learneing\033[0m"
+echo -e "\033[92m------- <qbc.py>\033[0m"
+python3 qbc.py
 echo -e "\033[33m########### Test others\033[0m"
 echo -e '\033[92m------- <cross_entropy.py>\033[0m'
 python3 cross_entropy.py
