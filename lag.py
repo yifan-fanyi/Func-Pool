@@ -4,8 +4,6 @@
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans, KMeans
 from sklearn.metrics.pairwise import euclidean_distances
-import warnings
-warnings.filterwarnings('ignore')
 
 class LAG():
     def __init__(self, learner, encode='onehot', num_clusters=[10,10], alpha=5, par={}):
@@ -15,6 +13,7 @@ class LAG():
         self.alpha = alpha
         self.clus_labels = []
         self.centroid = []
+        self.trained = False
         
     def compute_target_(self, X, Y, batch_size): 
         Y = Y.reshape(-1)
@@ -55,14 +54,18 @@ class LAG():
             print("       <Warning>        Using raw label for learner.")
             Yt_onehot = Yt
         self.learner.fit(X, Yt_onehot)
+        self.trained = True
         
     def predict(self, X):
+        assert (self.trained == True), "Must call fit first!"
         return self.learner.predict(X)
     
     def predict_proba(self, X):
+        assert (self.trained == True), "Must call fit first!"
         return self.learner.predict_proba(X)
     
     def score(self, X, Y):
+        assert (self.trained == True), "Must call fit first!"
         print("       <Warning>        Currently only support LLSR.")
         X = self.predict_proba(X)
         pred_labels = np.zeros((X.shape[0], len(np.unique(Y))))
@@ -77,7 +80,7 @@ if __name__ == "__main__":
     from sklearn.model_selection import train_test_split
     from llsr import LLSR
 
-    print(" \n> This is a test enample: ")
+    print(" > This is a test example: ")
     digits = datasets.load_digits()
     X = digits.images.reshape((len(digits.images), -1))
     print(" input feature shape: %s"%str(X.shape))

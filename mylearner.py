@@ -9,8 +9,6 @@
 
 import numpy as np 
 from sklearn.metrics import accuracy_score
-import warnings
-warnings.filterwarnings('ignore')
 
 class myLearner():
     def __init__(self, learner, num_class):
@@ -26,7 +24,7 @@ class myLearner():
         if train == True:
             self.class_list = {}
             for i in range(np.array(Y).shape[0]):
-                if Y[i, 0] not in self.class_list:
+                if Y[i, 0] not in self.class_list.keys():
                     self.class_list[Y[i,0]] = c
                     c += 1
                 res.append(self.class_list[Y[i, 0]])
@@ -55,7 +53,7 @@ class myLearner():
         self.trained = True
 
     def predict(self, X): 
-        assert (self.trained == True), "Must fit this learner first!"
+        assert (self.trained == True), "Must call fit first!"
         if self.oneclass == False:
             tmp_pred = self.learner.predict(X).reshape(-1)
         else:
@@ -63,7 +61,7 @@ class myLearner():
         return self.mapping(tmp_pred, train=False)
 
     def predict_proba(self, X): 
-        assert (self.trained == True), "Must fit this learner first!"
+        assert (self.trained == True), "Must call fit first!"
         if self.oneclass == False:
             tmp_pred = self.learner.predict_proba(X)
         else:
@@ -71,7 +69,7 @@ class myLearner():
         return self.mapping(tmp_pred, train=False, probability=True)
 
     def score(self, X, Y):
-        assert (self.trained == True), "Must fit this learner first!"
+        assert (self.trained == True), "Must call fit first!"
         return accuracy_score(Y, self.predict(X)) 
 
 if __name__ == "__main__":
@@ -79,7 +77,7 @@ if __name__ == "__main__":
     from sklearn import datasets
     from sklearn.model_selection import train_test_split
     
-    print(" \n> This is a test enample: ")
+    print(" > This is a test example: ")
     digits = datasets.load_digits()
     X = digits.images.reshape((len(digits.images), -1))
     print(" input feature shape: %s"%str(X.shape))

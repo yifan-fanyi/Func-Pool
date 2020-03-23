@@ -5,7 +5,6 @@
 # Depth goal may not achieved is no nodes's energy is larger than energy threshold or too few SaabArgs/shrinkArgs, (warning generates)
 #
 import numpy as np 
-import pickle
 
 from saab import Saab
 
@@ -117,7 +116,7 @@ class cwSaab():
         return output
 
     def transform(self, X):
-        assert (self.trained == True), "Must fit cwSaab first!"
+        assert (self.trained == True), "Must call fit first!"
         output = []
         X = self.cwSaab_1_layer(X, train=False)
         output.append(X)
@@ -154,7 +153,7 @@ if __name__ == "__main__":
 
     # read data
 
-    print(" \n> This is a test enample: ")
+    print(" > This is a test example: ")
     digits = datasets.load_digits()
     X = digits.images.reshape((len(digits.images), 8, 8, 1))
     print(" input feature shape: %s"%str(X.shape))

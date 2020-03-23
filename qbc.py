@@ -8,7 +8,7 @@ from scipy.stats import entropy
 import time
 
 class QBC():
-    def __init__(self, init=0.01, n_increment=200, n_iter=20, learners=[]):
+    def __init__(self, learners, init=0.01, n_increment=200, n_iter=20):
         self.init = init
         self.n_increment = n_increment
         self.n_learner = len(learners)
@@ -21,6 +21,7 @@ class QBC():
         return entropy(prob, base=self.num_class, axis=1)
 
     def fit(self, x, y, xv=None, yv=None):
+        self.trained = True
         self.num_class = np.unique(y).shape[0]
         x, xt, y, yt = train_test_split(x, y, train_size=self.init, random_state=42, stratify=y)
         acc_t, acc_v = [], []
@@ -51,19 +52,21 @@ class QBC():
             xt = np.delete(xt, idx, axis=0)
             yt = np.delete(yt, idx, axis=0)
             print('       end iter -> %3s using %10s seconds\n'%(str(k),str(time.time()-t0)))
-            self.trained = True
 
     def predict_proba(self, x):
+        assert (self.trained == True), "Must call fit first!"
         pred = np.zeros((x.shape[0], self.num_class))
         for i in range(self.n_learner):
             pred += self.learners[i].predict_proba(x)
-        return (pred - np.min(pred, axis=1, keepdims=True))/ (np.max(pred, axis=1, keepdims=True) - np.min(pred, axis=1, keepdims=True))
+        return pred / np.sum(pred, axis=1, keepdims=True)
     
     def predict(self, x):
+        assert (self.trained == True), "Must call fit first!"
         pred = self.predict_proba(x)
         return np.argmax(pred, axis=1)
     
     def score(self, x, y):
+        assert (self.trained == True), "Must call fit first!"
         pred = self.predict(x)
         return accuracy_score(y, pred)
 
@@ -73,7 +76,7 @@ if __name__ == "__main__":
     from sklearn.model_selection import train_test_split
     from mylearner import myLearner
     
-    print(" \n> This is a test enample: ")
+    print(" > This is a test example: ")
     digits = datasets.load_digits()
     X = digits.images.reshape((len(digits.images), -1))
     print(" input feature shape: %s"%str(X.shape))

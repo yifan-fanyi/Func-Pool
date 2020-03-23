@@ -27,7 +27,6 @@
 # both return <4-D array, shape (N, H_new, W_new, D_new)>, <dict> parameter
 
 import numpy as np 
-import pickle
 
 from saab import Saab
 
@@ -89,7 +88,7 @@ if __name__ == "__main__":
     from sklearn import datasets
     
     # read data
-    print(" \n> This is a test enample: ")
+    print(" > This is a test example: ")
     digits = datasets.load_digits()
     X = digits.images.reshape((len(digits.images), 8, 8, 1))
     print(" input feature shape: %s"%str(X.shape))

@@ -1,6 +1,5 @@
 # v2020.02.15
 import numpy as np 
-import math
 import cv2
 from skimage.measure import block_reduce
 

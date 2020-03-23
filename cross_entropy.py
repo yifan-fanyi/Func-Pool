@@ -106,7 +106,7 @@ if __name__ == "__main__":
     from sklearn import datasets
     from sklearn.model_selection import train_test_split
     
-    print(" \n> This is a test enample: ")
+    print(" > This is a test example: ")
     digits = datasets.load_digits()
     X = digits.images.reshape((len(digits.images), -1))
     print(" input feature shape: %s"%str(X.shape))

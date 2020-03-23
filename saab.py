@@ -4,10 +4,7 @@
 # modeiled from https://github.com/davidsonic/Interpretable_CNN
 
 import numpy as np
-from sklearn.decomposition import PCA, IncrementalPCA
-from numpy import linalg as LA
-from skimage.measure import block_reduce
-import pickle
+from sklearn.decomposition import PCA
 import time
 
 class Saab():
@@ -43,13 +40,13 @@ class Saab():
             kernels = np.concatenate((dc_kernel, kernels[:-1]), axis=0)
             energy = np.concatenate((np.array([largest_ev]), pca.explained_variance_[:-1]), axis=0)
             energy = energy / np.sum(energy)
-        bias = LA.norm(X, axis=1)
+        bias = np.linalg.norm(X, axis=1)
         bias = np.max(bias)
         self.Kernels, self.Energy, self.Bias = kernels, energy, bias
         self.trained = True
         
     def transform(self, X):
-        assert (self.trained == True), "Must fit Saab first!"
+        assert (self.trained == True), "Must call fit first!"
         X -= self.Mean0
         if self.needBias == True:
             X += self.Bias
