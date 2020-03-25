@@ -110,8 +110,8 @@ class cwSaab():
                 break
             output.append(X)
         self.trained = True
-        assert ('func' in concatArg.keys()), "'concatArg' must have key 'func'!"
-        output = concatArg['func'](output, concatArg)
+        assert ('func' in self.concatArg.keys()), "'concatArg' must have key 'func'!"
+        output = self.concatArg['func'](output, self.concatArg)
         self.Energy = np.concatenate(self.Energy, axis=0)
         return output
 
@@ -124,7 +124,7 @@ class cwSaab():
             X = self.cwSaab_n_layer(X, train=False, layer=i)
             output.append(X)
         assert ('func' in self.concatArg.keys()), "'concatArg' must have key 'func'!"
-        output = self.concatArg['func'](output, concatArg)
+        output = self.concatArg['func'](output, self.concatArg)
         return output
 
 if __name__ == "__main__":

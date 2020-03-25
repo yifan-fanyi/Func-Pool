@@ -47,6 +47,7 @@ class Saab():
         
     def transform(self, X):
         assert (self.trained == True), "Must call fit first!"
+        X = X.astype('float32')
         X -= self.Mean0
         if self.needBias == True:
             X += self.Bias
