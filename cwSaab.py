@@ -26,7 +26,7 @@ class cwSaab():
         if depth > np.min([len(SaabArgs), len(shrinkArgs)]):
             self.depth = np.min([len(SaabArgs), len(shrinkArgs)])
             print("       <WARNING> Too few 'SaabArgs/shrinkArgs' to get depth %s, actual depth: %s"%str(depth, self.depth))
-        
+
     def SaabTransform(self, X, saab, train, layer):
         shrinkArg, SaabArg = self.shrinkArgs[layer], self.SaabArgs[layer]
         assert ('func' in shrinkArg.keys()), "shrinkArg must contain key 'func'!"
@@ -36,9 +36,9 @@ class cwSaab():
         if train == True:
             saab = Saab(num_kernels=SaabArg['num_AC_kernels'], useDC=SaabArg['useDC'], needBias=SaabArg['needBias'])
             saab.fit(X)
-        transformed = saab.transform(X)
+        transformed, dc = saab.transform(X)
         transformed = transformed.reshape(S)
-        return saab, transformed
+        return saab, transformed, dc
 
     def cwSaab_1_layer(self, X, train):
         S = list(X.shape)
@@ -48,25 +48,26 @@ class cwSaab():
             saab_cur = []
         else:
             saab_cur = self.par['Layer'+str(0)]
-        transformed, eng = [], []
+        transformed, eng, DC = [], [], []
         for i in range(X.shape[0]):
             X_tmp = X[i].reshape(S)
             if train == True:
-                saab, tmp_transformed = self.SaabTransform(X_tmp, saab=None, train=True, layer=0)
+                saab, tmp_transformed, dc = self.SaabTransform(X_tmp, saab=None, train=True, layer=0)
                 saab_cur.append(saab)
                 eng.append(saab.Energy)
             else:
                 if len(saab_cur) == i:
                     break
-                _, tmp_transformed = self.SaabTransform(X_tmp, saab=saab_cur[i], train=False, layer=0)
+                _, tmp_transformed, dc = self.SaabTransform(X_tmp, saab=saab_cur[i], train=False, layer=0)
             transformed.append(tmp_transformed)
+            DC.append(dc)
         if train == True:
             self.par['Layer'+str(0)] = saab_cur
             self.Energy.append(np.concatenate(eng, axis=0))
-        return np.concatenate(transformed, axis=-1)
+        return np.concatenate(transformed, axis=-1), DC
 
     def cwSaab_n_layer(self, X, train, layer):
-        output, eng_cur, ct, pidx = [], [], -1, 0
+        output, eng_cur, DC, ct, pidx = [], [], [], -1, 0
         S = list(X.shape)
         S[-1] = 1
         X = np.moveaxis(X, -1, 0)
@@ -83,49 +84,82 @@ class cwSaab():
                 self.split = True
                 X_tmp = X[ct].reshape(S)
                 if train == True:
-                    saab, out_tmp = self.SaabTransform(X_tmp, saab=None, train=True, layer=layer)
+                    saab, out_tmp, dc = self.SaabTransform(X_tmp, saab=None, train=True, layer=layer)
                     saab.Energy *= saab_prev[i].Energy[j]
                     saab_cur.append(saab)
                     eng_cur.append(saab.Energy) 
                 else:
-                    _, out_tmp = self.SaabTransform(X_tmp, saab=saab_cur[pidx], train=False, layer=layer)
+                    _, out_tmp, dc = self.SaabTransform(X_tmp, saab=saab_cur[pidx], train=False, layer=layer)
                     pidx += 1
                 output.append(out_tmp)
+                DC.append(dc)
         if self.split == True:
             output = np.concatenate(output, axis=-1)
             if train == True:
                 self.par['Layer'+str(layer)] = saab_cur
                 self.Energy.append(np.concatenate(eng_cur, axis=0))
-        return output
+        return output, DC
     
     def fit(self, X):
-        output = []
-        X = self.cwSaab_1_layer(X, train=True)
+        output, DC = [], []
+        X, dc = self.cwSaab_1_layer(X, train=True)
         output.append(X)
+        DC.append(dc)
         for i in range(1, self.depth):
-            X = self.cwSaab_n_layer(X, train=True, layer=i)
+            X, dc = self.cwSaab_n_layer(X, train=True, layer=i)
             if self.split == False:
                 self.depth = i
                 print("       <WARNING> Cannot futher split, actual depth: %s"%str(i))
                 break
             output.append(X)
+            DC.append(dc)
         self.trained = True
         assert ('func' in self.concatArg.keys()), "'concatArg' must have key 'func'!"
         output = self.concatArg['func'](output, self.concatArg)
         self.Energy = np.concatenate(self.Energy, axis=0)
-        return output
+        return output, DC
 
     def transform(self, X):
         assert (self.trained == True), "Must call fit first!"
-        output = []
-        X = self.cwSaab_1_layer(X, train=False)
+        output, DC = [], []
+        X, dc = self.cwSaab_1_layer(X, train=False)
         output.append(X)
+        DC.append(dc)
         for i in range(1, self.depth):
-            X = self.cwSaab_n_layer(X, train=False, layer=i)
+            X, dc = self.cwSaab_n_layer(X, train=False, layer=i)
             output.append(X)
+            DC.append(dc)
         assert ('func' in self.concatArg.keys()), "'concatArg' must have key 'func'!"
         output = self.concatArg['func'](output, self.concatArg)
-        return output
+        return output, DC
+    
+    def inv_SaabTransform(self, X, saab, DC, inv_shrinkArg):
+        assert ('func' in inv_shrinkArg.keys()), "'inv_shrinkArg' must contain key 'func'!"
+        X = inv_shrinkArg['func'](X, inv_shrinkArg)
+        S = X.shape
+        X = X.reshape(-1, S[-1])
+        transformed = saab.inverse_transform(X, DC)
+        S[-1] = -1
+        transformed = transformed.reshape(S)
+        return transformed
+
+    def inverse_transform(self, X, DC, inv_concatArg, inv_shrinkArgs):
+        assert ('func' in inv_concatArg.keys()), "'inv_concatArg' must contain key 'func'!"
+        X = inv_concatArg['func'](X, inv_concatArg)
+        for i in range(self.depth-1, -1, -1):
+            tmp = np.movaxis(X[i], -1, 0)
+            res, j, ct = [], 0, 0
+            while ct < tmp.shape[0]:
+                ctt = self.par['Layer'+str(i)][j].Energy.shape[0]
+                res.append(self.inv_SaabTransform(np.moveaxis(tmp[ct:ct+ctt], 0, -1), saab=self.par['Layer'+str(i)][j], DC=DC[i][j], inv_shrinkArg=inv_shrinkArgs[i]))
+                ct += ctt
+            res = np.concatenate(res, axis=-1)
+            if i > 0:
+                tmp = tmp = np.movaxis(X[i-1], -1, 0)
+                tmp = np.concatenate((tmp[j:], np.moveaxis(res, -1, 0)), axis=0)
+        return res
+        
+
 
 if __name__ == "__main__":
     # example useage
@@ -139,7 +173,16 @@ if __name__ == "__main__":
         #   shrinkArg: <dict> arguments needed to call outside methods
         #
         # return <np.array> same structure as data flow in tree
-        return PixelHop_Neighbour(X, shrinkArg['dilate'], shrinkArg['pad'])
+        print(X.shape)
+        return X.reshape(X.shape[0], 1, 1, -1)
+        #return PixelHop_Neighbour(X, shrinkArg['dilate'], shrinkArg['pad'])
+    def invShrink(X, shrinkArg):
+        # only can have following two args
+        #   X: <np.array> , data/feature generated inside the tree 
+        #   shrinkArg: <dict> arguments needed to call outside methods
+        #
+        # return <np.array> same structure as data flow in tree
+        return X.reshape(X.shape[0], 8, 8, 1)
 
     # example callback function for how to concate features from different hops
     def Concat(X, concatArg):
@@ -148,7 +191,7 @@ if __name__ == "__main__":
         #   concatArg: <dict> arguments needed to call outside methods
         #
         # return <any> it would become the output of tree
-        X = np.concatenate(X, axis=-1)
+        #X = np.concatenate(X, axis=-1)
         return X
 
     # read data
@@ -163,12 +206,15 @@ if __name__ == "__main__":
                 {'num_AC_kernels':-1, 'needBias':True, 'useDC':True, 'batch':None}]
     shrinkArgs = [{'func':Shrink, 'dilate':[1], 'pad':'reflect'},
                 {'func': Shrink, 'dilate':[1], 'pad':'reflect'}]
+    inv_shrinkArgs = [{'func':invShrink, 'dilate':[1], 'pad':'reflect'},
+                {'func': invShrink, 'dilate':[1], 'pad':'reflect'}]
     concatArg = {'func':Concat}
 
     # run
     cwsaab = cwSaab(depth=2, energyTH=0.001, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg)
-    output = cwsaab.fit(X)
-    print(" --> train feature shape: ", output.shape)
-    output = cwsaab.transform(X)
-    print(" --> test feature shape: ", output.shape)
+    output, DC = cwsaab.fit(X)
+    #print(" --> train feature shape: ", output.shape)
+    output, DC = cwsaab.transform(X)
+    #print(" --> test feature shape: ", output.shape)
+    res = cwsaab.inverse_transform(output, DC, inv_concatArg=concatArg, inv_shrinkArgs=inv_shrinkArgs)
     print("------- DONE -------\n")

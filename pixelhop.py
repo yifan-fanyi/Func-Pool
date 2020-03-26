@@ -1,30 +1,5 @@
-# v2020.02.05
+# v2020.03.26
 # PixelHop
-#
-# PixelHop_Unit: single layer 
-##   X: <4-D array>, (N, H, W, D)
-##   train: <bool> False: using saab to get weight; True: loaded pre-achieved parameter from par
-##   par: parameters needed for testing stage
-## do not need following when "train=False":
-##   dilate: <list/np.array> dilate for pixelhop (default: 1)
-##   pad: <'reflect'/'none'/'zeros'> padding method (default: 'reflect)
-##   SaabArg <dict> arguments passed to Saab, ex {'num_AC_kernels':-1, 'needBias':False, 'useDC':True, 'batch':None}
-## optional:
-##   batch: <int/None> minbatch for saving memory 
-#
-# Pixelhop: multi layer Pixelhop_Unit no padding involved
-##   X: same above
-##   train: same above
-##   pars: <dict> save par from each PixelHop_Unit, ex {'Layer0':par above}
-## do not need following when "train=False":
-##   depth: <int> number of PixelHop_Unit
-##   dilates: <list/np.array> dilates at each PixelHop_Unit
-##   pads: <list> pad method at each layer
-##   SaabArgs: <list> of SaabArg
-## optional:
-##   batch: same above
-
-# both return <4-D array, shape (N, H_new, W_new, D_new)>, <dict> parameter
 
 import numpy as np 
 
@@ -66,23 +41,34 @@ def Batch_PixelHop_Neighbour(feature, dilate, pad, batch):
             res = np.concatenate((res, PixelHop_Neighbour(feature[i:], dilate, pad)), axis=0)
     return res
 
-def PixelHop_Unit(X, train=True, par=None, dilate=[1], pad='reflect', SaabArg=None, batch=None):
-    assert (len(X.shape) == 4), "Input must be a 4D array!"
-    if train == True:
-        par = {'dilate': dilate, 'pad': pad, 'SaabArg': SaabArg, 'Saab': None}
-    else:
-        assert (par != None), "Parameter must be passed during testing stage!"
-    if batch == None:
-        X = PixelHop_Neighbour(X, par['dilate'], par['pad'])
-    else:
-        X = Batch_PixelHop_Neighbour(X, par['dilate'], par['pad'], batch)
-    S = X.shape
-    X = X.reshape(-1, X.shape[-1])
-    par['Saab'] = Saab(num_kernels=par['SaabArg']['num_AC_kernels'], useDC=par['SaabArg']['useDC'], needBias=par['SaabArg']['needBias'])
-    par['Saab'].fit(X)
-    X = par['Saab'].transform(X)
-    X = X.reshape(S[0], S[1], S[2], -1)
-    return X, par
+class Pixelhop():
+    def __init__(self, dilate, pad, SaabArg, batch=None):
+        self.saab = Saab(num_kernels=SaabArg['num_AC_kernels'], useDC=SaabArg['useDC'], needBias=SaabArg['needBias'])
+        self.dilate = np.array([dilate]).tolist()
+        self.pad = pad
+        self.batch = batch
+        self.trained = False
+    
+    def fit(self, X):
+        if self.batch == None:
+            X = PixelHop_Neighbour(X, self.dilate, self.pad)
+        else:
+            X = Batch_PixelHop_Neighbour(X, self.dilate, self.pad, self.batch)
+        X = X.reshape(-1, X.shape[-1])
+        self.saab.fit(X)
+        self.trained = True
+    
+    def transform(self, X):
+        assert (self.trained == True), "Call fit first!"
+        if self.batch == None:
+            X = PixelHop_Neighbour(X, self.dilate, self.pad)
+        else:
+            X = Batch_PixelHop_Neighbour(X, self.dilate, self.pad, self.batch)
+        S = X.shape
+        X = X.reshape(-1, X.shape[-1])
+        X, DC = self.saab.transform(X)
+        X = X.reshape(S[0], S[1], S[2], -1)
+        return X, DC
 
 if __name__ == "__main__":
     from sklearn import datasets
@@ -95,9 +81,9 @@ if __name__ == "__main__":
     SaabArg = {'num_AC_kernels':-1, 'needBias':False, 'useDC':True}
 
     # run
-    X1, par = PixelHop_Unit(X, train=True, dilate=[1], pad='reflect', par=None, SaabArg=SaabArg, batch=None)
-    print(" --> train feature shape: ", X1.shape)
-    X2, par = PixelHop_Unit(X, train=False, par=par, batch=None)
+    hop1 = Pixelhop(dilate=1, pad='reflect', SaabArg=SaabArg, batch=None)
+    hop1.fit(X)
+    X2, DC = hop1.transform(X)
     print(" --> test feature shape: ", X2.shape)
     print("------- DONE -------\n")
 

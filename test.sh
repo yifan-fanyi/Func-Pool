@@ -1,6 +1,8 @@
 echo ""
 echo -e "\033[34m 2020.03.19, some test (..•˘_˘•..)\033[0m"
 echo -e "\033[33m########### Test feature generation methods\033[0m"
+echo -e "\033[92m------- <saab.py>\033[0m"
+python3 saab.py
 echo -e "\033[92m------- <pixelhop.py>\033[0m"
 python3 pixelhop.py
 echo -e "\033[92m------- <cwSaab.py>\033[0m"

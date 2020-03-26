@@ -1,4 +1,4 @@
-# v2020.02.19
+# v2020.03.25
 
 # Saab transformation
 # modeiled from https://github.com/davidsonic/Interpretable_CNN
@@ -49,6 +49,7 @@ class Saab():
         assert (self.trained == True), "Must call fit first!"
         X = X.astype('float32')
         X -= self.Mean0
+        X, dc = self.remove_mean(X.copy(), axis=1)
         if self.needBias == True:
             X += self.Bias
         transformed = np.matmul(X, np.transpose(self.Kernels))
@@ -56,7 +57,42 @@ class Saab():
             e = np.zeros((1, self.Kernels.shape[0]))
             e[0, 0] = 1
             transformed -= self.Bias*e
-        return transformed
+        return transformed, dc
+    
+    def inverse_transform(self, X, DC):
+        if self.needBias == True:
+            e = np.zeros((1, self.Kernels.shape[0]))
+            e[0, 0] = 1
+            X += self.Bias * e
+        X = np.dot(X, self.Kernels)
+        if self.needBias == True:
+            X -= self.Bias  
+        X += DC
+        X += self.Mean0
+        return X
 
-
+if __name__ == "__main__":
+    from sklearn import datasets
+    print(" > This is a test example: ")
+    digits = datasets.load_digits()
+    data = digits.images.reshape((len(digits.images), 8, 8, 1))
+    print(" input feature shape: %s"%str(data.shape))
+    
+    print(" --> test inv")
+    print(" -----> num_kernels=-1, needBias=False")
+    X = data.copy()
+    X = X.reshape(X.shape[0], -1)[0:100]
+    saab = Saab(num_kernels=-1, useDC=True, needBias=False)
+    saab.fit(X)
+    Xt, dc = saab.transform(X)
+    Y = saab.inverse_transform(Xt, dc)
+    assert (np.mean(np.abs(X-Y)) < 1e-5), "invSaab error!"
+    print(" -----> num_kernels=-1, needBias=True")
+    X = data.copy()
+    X = X.reshape(X.shape[0], -1)[0:100]
+    saab = Saab(num_kernels=-1, useDC=True, needBias=False)
+    saab.fit(X)
+    Xt, dc = saab.transform(X)
+    Y = saab.inverse_transform(Xt, dc)
+    assert (np.mean(np.abs(X-Y)) < 1e-5), "invSaab error!"
 
