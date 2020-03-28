@@ -40,8 +40,7 @@ class Saab():
             kernels = np.concatenate((dc_kernel, kernels[:-1]), axis=0)
             energy = np.concatenate((np.array([largest_ev]), pca.explained_variance_[:-1]), axis=0)
             energy = energy / np.sum(energy)
-        bias = np.linalg.norm(X, axis=1)
-        bias = np.max(bias)
+        bias = np.max(np.linalg.norm(X, axis=1))
         self.Kernels, self.Energy, self.Bias = kernels, energy, bias
         self.trained = True
         
@@ -50,23 +49,23 @@ class Saab():
         X = X.astype('float32')
         X -= self.Mean0
         X, dc = self.remove_mean(X.copy(), axis=1)
+        X = np.matmul(X, np.transpose(self.Kernels))
         if self.needBias == True:
             X += self.Bias
-        transformed = np.matmul(X, np.transpose(self.Kernels))
-        if self.needBias == True:
-            e = np.zeros((1, self.Kernels.shape[0]))
-            e[0, 0] = 1
-            transformed -= self.Bias*e
-        return transformed, dc
+            if self.useDC == True:
+                X[0] -= self.Bias
+        return X, dc
     
     def inverse_transform(self, X, DC):
+        assert (self.trained == True), "Must call fit first!"
+        assert (DC.shape[0] == X.shape[0]), "Input shape not match! 'X' and 'DC'"
+        X = X.astype('float32')
+        DC = DC.astype('float32')
         if self.needBias == True:
-            e = np.zeros((1, self.Kernels.shape[0]))
-            e[0, 0] = 1
-            X += self.Bias * e
-        X = np.dot(X, self.Kernels)
-        if self.needBias == True:
-            X -= self.Bias  
+            X -= self.Bias 
+            if self.useDC == True:
+                X[0] += self.Bias
+        X = np.matmul(X, self.Kernels)
         X += DC
         X += self.Mean0
         return X
@@ -79,7 +78,7 @@ if __name__ == "__main__":
     print(" input feature shape: %s"%str(data.shape))
     
     print(" --> test inv")
-    print(" -----> num_kernels=-1, needBias=False")
+    print(" -----> num_kernels=-1, needBias=False, useDC=True")
     X = data.copy()
     X = X.reshape(X.shape[0], -1)[0:100]
     saab = Saab(num_kernels=-1, useDC=True, needBias=False)
@@ -87,10 +86,26 @@ if __name__ == "__main__":
     Xt, dc = saab.transform(X)
     Y = saab.inverse_transform(Xt, dc)
     assert (np.mean(np.abs(X-Y)) < 1e-5), "invSaab error!"
-    print(" -----> num_kernels=-1, needBias=True")
+    print(" -----> num_kernels=-1, needBias=True, useDC=True")
     X = data.copy()
     X = X.reshape(X.shape[0], -1)[0:100]
-    saab = Saab(num_kernels=-1, useDC=True, needBias=False)
+    saab = Saab(num_kernels=-1, useDC=True, needBias=True)
+    saab.fit(X)
+    Xt, dc = saab.transform(X)
+    Y = saab.inverse_transform(Xt, dc)
+    assert (np.mean(np.abs(X-Y)) < 1e-5), "invSaab error!"
+    print(" -----> num_kernels=-1, needBias=False, useDC=False")
+    X = data.copy()
+    X = X.reshape(X.shape[0], -1)[0:100]
+    saab = Saab(num_kernels=-1, useDC=False, needBias=False)
+    saab.fit(X)
+    Xt, dc = saab.transform(X)
+    Y = saab.inverse_transform(Xt, dc)
+    assert (np.mean(np.abs(X-Y)) < 1e-5), "invSaab error!"
+    print(" -----> num_kernels=-1, needBias=True, useDC=False")
+    X = data.copy()
+    X = X.reshape(X.shape[0], -1)[0:100]
+    saab = Saab(num_kernels=-1, useDC=False, needBias=True)
     saab.fit(X)
     Xt, dc = saab.transform(X)
     Y = saab.inverse_transform(Xt, dc)

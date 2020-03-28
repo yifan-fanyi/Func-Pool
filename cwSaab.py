@@ -135,86 +135,85 @@ class cwSaab():
     
     def inv_SaabTransform(self, X, saab, DC, inv_shrinkArg):
         assert ('func' in inv_shrinkArg.keys()), "'inv_shrinkArg' must contain key 'func'!"
-        X = inv_shrinkArg['func'](X, inv_shrinkArg)
         S = X.shape
         X = X.reshape(-1, S[-1])
-        transformed = saab.inverse_transform(X, DC)
-        S[-1] = -1
-        transformed = transformed.reshape(S)
-        return transformed
+        X = saab.inverse_transform(X, DC)
+        X = X.reshape(S)
+        X = inv_shrinkArg['func'](X, inv_shrinkArg)
+        return X
 
     def inverse_transform(self, X, DC, inv_concatArg, inv_shrinkArgs):
+        assert (self.trained == True), "Must call fit first!"
         assert ('func' in inv_concatArg.keys()), "'inv_concatArg' must contain key 'func'!"
         X = inv_concatArg['func'](X, inv_concatArg)
+        tmp = np.moveaxis(X[self.depth-1], -1, 0)
         for i in range(self.depth-1, -1, -1):
-            tmp = np.movaxis(X[i], -1, 0)
-            res, j, ct = [], 0, 0
-            while ct < tmp.shape[0]:
-                ctt = self.par['Layer'+str(i)][j].Energy.shape[0]
-                res.append(self.inv_SaabTransform(np.moveaxis(tmp[ct:ct+ctt], 0, -1), saab=self.par['Layer'+str(i)][j], DC=DC[i][j], inv_shrinkArg=inv_shrinkArgs[i]))
-                ct += ctt
+            res, ct, j = [], 0, 0
+            while j < len(self.par['Layer'+str(i)]):
+                num_kernel = self.par['Layer'+str(i)][j].Energy.shape[0]
+                rr = self.inv_SaabTransform(np.moveaxis(tmp[ct:ct+num_kernel], 0, -1), saab=self.par['Layer'+str(i)][j], DC=DC[i][j], inv_shrinkArg=inv_shrinkArgs[i])
+                res.append(rr)
+                j += 1
+                ct += num_kernel
             res = np.concatenate(res, axis=-1)
             if i > 0:
-                tmp = tmp = np.movaxis(X[i-1], -1, 0)
-                tmp = np.concatenate((tmp[j:], np.moveaxis(res, -1, 0)), axis=0)
+                tmp = np.moveaxis(X[i-1], -1, 0)
+                tmp = np.concatenate((np.moveaxis(res, -1, 0), tmp[j:]), axis=0)
         return res
         
-
-
 if __name__ == "__main__":
     # example useage
     from sklearn import datasets
-    from pixelhop import PixelHop_Neighbour
+    from skimage.util import view_as_windows
 
-    # example callback function for collecting patches
+    # example callback function for collecting patches and its inverse
     def Shrink(X, shrinkArg):
-        # only can have following two args
-        #   X: <np.array> , data/feature generated inside the tree 
-        #   shrinkArg: <dict> arguments needed to call outside methods
-        #
-        # return <np.array> same structure as data flow in tree
-        print(X.shape)
-        return X.reshape(X.shape[0], 1, 1, -1)
-        #return PixelHop_Neighbour(X, shrinkArg['dilate'], shrinkArg['pad'])
-    def invShrink(X, shrinkArg):
-        # only can have following two args
-        #   X: <np.array> , data/feature generated inside the tree 
-        #   shrinkArg: <dict> arguments needed to call outside methods
-        #
-        # return <np.array> same structure as data flow in tree
-        return X.reshape(X.shape[0], 8, 8, 1)
+        win = shrinkArg['win']
+        X = view_as_windows(X, (1,win,win,1), (1,win,win,1))
+        return X.reshape(X.shape[0], X.shape[1], X.shape[2], -1)
+
+    def invShrink(X, invshrinkArg):
+        win = invshrinkArg['win']
+        S = X.shape
+        X = X.reshape(S[0], S[1], S[2], -1, 1, win, win, 1)
+        X = np.moveaxis(X, 5, 2)
+        X = np.moveaxis(X, 6, 4)
+        return X.reshape(S[0], win*S[1], win*S[2], -1)
 
     # example callback function for how to concate features from different hops
     def Concat(X, concatArg):
-        # only can have following two args
-        #   X: <list> , feature of different hops
-        #   concatArg: <dict> arguments needed to call outside methods
-        #
-        # return <any> it would become the output of tree
-        #X = np.concatenate(X, axis=-1)
         return X
 
     # read data
-
+    import cv2
     print(" > This is a test example: ")
     digits = datasets.load_digits()
     X = digits.images.reshape((len(digits.images), 8, 8, 1))
     print(" input feature shape: %s"%str(X.shape))
 
     # set args
-    SaabArgs = [{'num_AC_kernels':-1, 'needBias':False, 'useDC':True, 'batch':None},
+    SaabArgs = [{'num_AC_kernels':-1, 'needBias':False, 'useDC':True, 'batch':None}, 
                 {'num_AC_kernels':-1, 'needBias':True, 'useDC':True, 'batch':None}]
-    shrinkArgs = [{'func':Shrink, 'dilate':[1], 'pad':'reflect'},
-                {'func': Shrink, 'dilate':[1], 'pad':'reflect'}]
-    inv_shrinkArgs = [{'func':invShrink, 'dilate':[1], 'pad':'reflect'},
-                {'func': invShrink, 'dilate':[1], 'pad':'reflect'}]
+    shrinkArgs = [{'func':Shrink, 'win':2}, 
+                {'func': Shrink, 'win':2}]
+    inv_shrinkArgs = [{'func':invShrink, 'win':2}, 
+                    {'func': invShrink, 'win':2}]
     concatArg = {'func':Concat}
+    inv_concatArg = {'func':Concat}
 
-    # run
-    cwsaab = cwSaab(depth=2, energyTH=0.001, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg)
+    print(" --> test inv")
+    print(" -----> depth=1")
+    cwsaab = cwSaab(depth=1, energyTH=0.0001, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg)
     output, DC = cwsaab.fit(X)
-    #print(" --> train feature shape: ", output.shape)
     output, DC = cwsaab.transform(X)
-    #print(" --> test feature shape: ", output.shape)
-    res = cwsaab.inverse_transform(output, DC, inv_concatArg=concatArg, inv_shrinkArgs=inv_shrinkArgs)
+    Y = cwsaab.inverse_transform(output, DC, inv_concatArg=inv_concatArg, inv_shrinkArgs=inv_shrinkArgs)
+    Y = np.round(Y)
+    assert (np.mean(np.abs(X-Y)) < 1e-5), "invcwSaab error!"
+    print(" -----> depth=2")
+    cwsaab = cwSaab(depth=2, energyTH=0.0001, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg)
+    output, DC = cwsaab.fit(X)
+    output, DC = cwsaab.transform(X)
+    Y = cwsaab.inverse_transform(output, DC, inv_concatArg=inv_concatArg, inv_shrinkArgs=inv_shrinkArgs)
+    Y = np.round(Y)
+    assert (np.mean(np.abs(X-Y)) < 1), "invcwSaab error!"
     print("------- DONE -------\n")

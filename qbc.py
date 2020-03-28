@@ -8,13 +8,14 @@ from scipy.stats import entropy
 import time
 
 class QBC():
-    def __init__(self, learners, init=0.01, n_increment=200, n_iter=20):
+    def __init__(self, learners, init=0.01, n_increment=200, n_iter=20, percent=0.5):
         self.init = init
         self.n_increment = n_increment
         self.n_learner = len(learners)
         self.n_iter = n_iter
         self.num_class = 3
         self.learners = learners
+        self.percent = percent
         self.trained = False
     
     def metric(self, prob):
@@ -29,7 +30,7 @@ class QBC():
             print('       start iter -> %3s'%str(k))
             t0 = time.time()
             for i in range(self.n_learner):
-                idx = np.random.choice(x.shape[0], x.shape[0]//2)
+                idx = np.random.choice(x.shape[0], (int)(x.shape[0]*self.percent))
                 self.learners[i].fit(x[idx], y[idx])
             pt = self.predict_proba(xt)
             at = accuracy_score(yt, np.argmax(pt, axis=1))
