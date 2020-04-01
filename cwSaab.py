@@ -1,4 +1,4 @@
-# 2020.03.19v1
+# 2020.03.31
 # A generalized version of channel wise Saab
 # Current code accepts <np.array> shape(..., D) as input
 #
@@ -25,7 +25,7 @@ class cwSaab():
         self.split = False
         if depth > np.min([len(SaabArgs), len(shrinkArgs)]):
             self.depth = np.min([len(SaabArgs), len(shrinkArgs)])
-            print("       <WARNING> Too few 'SaabArgs/shrinkArgs' to get depth %s, actual depth: %s"%str(depth, self.depth))
+            print("       <WARNING> Too few 'SaabArgs/shrinkArgs' to get depth %s, actual depth: %s"%(str(depth),str(self.depth)))
 
     def SaabTransform(self, X, saab, train, layer):
         shrinkArg, SaabArg = self.shrinkArgs[layer], self.SaabArgs[layer]
