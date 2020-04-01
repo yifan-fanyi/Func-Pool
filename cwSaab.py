@@ -33,6 +33,8 @@ class cwSaab():
         X = shrinkArg['func'](X, shrinkArg)
         S = X.shape
         X = X.reshape(-1, S[-1])
+        if SaabArg['num_AC_kernels'] != -1:
+            S[-1] = SaabArg['num_AC_kernels']
         if train == True:
             saab = Saab(num_kernels=SaabArg['num_AC_kernels'], useDC=SaabArg['useDC'], needBias=SaabArg['needBias'])
             saab.fit(X)
@@ -116,7 +118,7 @@ class cwSaab():
         self.trained = True
         assert ('func' in self.concatArg.keys()), "'concatArg' must have key 'func'!"
         output = self.concatArg['func'](output, self.concatArg)
-        self.Energy = np.concatenate(self.Energy, axis=0)
+        #self.Energy = np.concatenate(self.Energy, axis=0)
         return output, DC
 
     def transform(self, X):
@@ -135,9 +137,10 @@ class cwSaab():
     
     def inv_SaabTransform(self, X, saab, DC, inv_shrinkArg):
         assert ('func' in inv_shrinkArg.keys()), "'inv_shrinkArg' must contain key 'func'!"
-        S = X.shape
+        S = list(X.shape)
         X = X.reshape(-1, S[-1])
         X = saab.inverse_transform(X, DC)
+        S[-1] = np.array(X.shape)[-1]        
         X = X.reshape(S)
         X = inv_shrinkArg['func'](X, inv_shrinkArg)
         return X
@@ -148,17 +151,23 @@ class cwSaab():
         X = inv_concatArg['func'](X, inv_concatArg)
         tmp = np.moveaxis(X[self.depth-1], -1, 0)
         for i in range(self.depth-1, -1, -1):
-            res, ct, j = [], 0, 0
-            while j < len(self.par['Layer'+str(i)]):
+            res, ct, jj = [], 0, 0
+            for j in range(len(self.par['Layer'+str(i)])):
                 num_kernel = self.par['Layer'+str(i)][j].Energy.shape[0]
-                rr = self.inv_SaabTransform(np.moveaxis(tmp[ct:ct+num_kernel], 0, -1), saab=self.par['Layer'+str(i)][j], DC=DC[i][j], inv_shrinkArg=inv_shrinkArgs[i])
-                res.append(rr)
-                j += 1
+                res.append(self.inv_SaabTransform(np.moveaxis(tmp[ct:ct+num_kernel], 0, -1), 
+                                                  saab=self.par['Layer'+str(i)][j], 
+                                                  DC=DC[i][j], 
+                                                  inv_shrinkArg=inv_shrinkArgs[i]))
                 ct += num_kernel
-            res = np.concatenate(res, axis=-1)
+            res = np.concatenate(res, axis=-1)  
             if i > 0:
+                res = np.moveaxis(res, -1, 0)
                 tmp = np.moveaxis(X[i-1], -1, 0)
-                tmp = np.concatenate((np.moveaxis(res, -1, 0), tmp[j:]), axis=0)
+                ct = 0
+                for j in range(tmp.shape[0]):
+                    if self.Energy[i-1][j] > self.energyTH:
+                        tmp[j] = res[ct]
+                        ct+=1
         return res
         
 if __name__ == "__main__":
