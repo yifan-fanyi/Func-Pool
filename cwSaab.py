@@ -31,7 +31,7 @@ class cwSaab():
         shrinkArg, SaabArg = self.shrinkArgs[layer], self.SaabArgs[layer]
         assert ('func' in shrinkArg.keys()), "shrinkArg must contain key 'func'!"
         X = shrinkArg['func'](X, shrinkArg)
-        S = X.shape
+        S = list(X.shape)
         X = X.reshape(-1, S[-1])
         if SaabArg['num_AC_kernels'] != -1:
             S[-1] = SaabArg['num_AC_kernels']
