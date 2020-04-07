@@ -1,4 +1,4 @@
-# 2020.03.19v2
+# 2020.04.06 v3
 # label assistant regression
 # modified from Yueru
 import numpy as np
@@ -7,12 +7,14 @@ from sklearn.metrics.pairwise import euclidean_distances
 
 class LAG():
     def __init__(self, learner, encode='onehot', num_clusters=[10,10], alpha=5, par={}):
+        assert (str(learner.__class__) == "<class 'llsr.LLSR'>"), "Currently only support <class 'llsr.LLSR'>!"
         self.learner = learner
         self.encode = encode 
         self.num_clusters = num_clusters 
         self.alpha = alpha
         self.clus_labels = []
         self.centroid = []
+        self.num_class = []
         self.trained = False
         
     def compute_target_(self, X, Y, batch_size): 
@@ -36,9 +38,14 @@ class LAG():
         return labels.astype('int32')
 
     def fit(self, X, Y, batch_size=None):
-        assert (len(self.num_clusters) >= np.unique(Y).shape[0]), "'len(num_cluster)' must larger than class number!"
+        '''
+        LAG unit: fit
+        input: X of shape (N, K), N is the number of training samples
+        '''
+        self.num_class = len(np.unique(Y))
+        assert (len(self.num_clusters) >= self.num_class), "'len(num_cluster)' must larger than class number!"
         Yt = self.compute_target_(X, Y, batch_size=batch_size)    
-        if self.encode == 'distance':
+        if self.encode == 'distance': # this is the mode used in the paper
             Yt_onehot = np.zeros((Yt.shape[0], self.clus_labels.shape[0]))
             for i in range(Yt.shape[0]):
                 gt = Y[i].copy()
@@ -56,29 +63,51 @@ class LAG():
         self.learner.fit(X, Yt_onehot)
         self.trained = True
         
-    def predict(self, X):
-        assert (self.trained == True), "Must call fit first!"
-        return self.learner.predict(X)
-    
-    def predict_proba(self, X):
+    def transform(self, X):
+        '''
+        LAG unit: transformation
+        input: X of shape (N, K)
+        output: (N, M), M = sum(num_clusters[i]*num_class)
+        Example: if having 10 classes, and create 5 seeds per class, output size = (N,50)
+        '''
         assert (self.trained == True), "Must call fit first!"
         return self.learner.predict_proba(X)
     
-    def score(self, X, Y):
+    def predict_proba(self, X):
+        '''
+        LAG unit: group energy in each class
+        input: X of shape (N, K)
+        output: probability vectors of size(N, num_class)
+        Example: if having 10 classes, output size = (N,10)
+        '''
         assert (self.trained == True), "Must call fit first!"
         print("       <Warning>        Currently only support LLSR.")
-        X = self.predict_proba(X)
-        pred_labels = np.zeros((X.shape[0], len(np.unique(Y))))
-        for km_i in range(len(np.unique(Y))):
+        X = self.transform(X)
+        pred_labels = np.zeros((X.shape[0], self.num_class))
+        for km_i in range(self.num_class):
             pred_labels[:, km_i] = np.sum(X[:, self.clus_labels==km_i], axis=1)
-        pred_labels = np.argmax(pred_labels, axis=1)
+        pred_labels = pred_labels/np.sum(pred_labels,axis=1,keepdims=1)
+        return pred_labels   
+
+    def predict(self, X):
+        '''
+        LAG unit: group energy in each class
+        input: X of shape (N, K)
+        output: probability vectors of size(N, num_class)
+        Example: if having 10 classes, output size = (N,10)
+        '''
+        return np.argmax(self.predict_proba(X), axis=1) 
+
+    def score(self, X, Y):
+        assert (self.trained == True), "Must call fit first!"
+        pred_labels = self.predict(X)
         idx = (pred_labels == Y.reshape(-1))
         return np.count_nonzero(idx) / Y.shape[0]
 
 if __name__ == "__main__":
     from sklearn import datasets
     from sklearn.model_selection import train_test_split
-    from llsr import LLSR
+    from llsr import LLSR as myLLSR
 
     print(" > This is a test example: ")
     digits = datasets.load_digits()
@@ -86,8 +115,10 @@ if __name__ == "__main__":
     print(" input feature shape: %s"%str(X.shape))
     X_train, X_test, y_train, y_test = train_test_split(X, digits.target, test_size=0.2,  stratify=digits.target)
 
-    clf = LAG(encode='distance', num_clusters=[2,2,2,2,2,2,2,2,2,2], alpha=5, learner=LLSR(onehot=False))  
-    clf.fit(X_train, y_train)
-    print(" --> train acc: %s"%str(clf.score(X_train, y_train)))
-    print(" --> test acc.: %s"%str(clf.score(X_test, y_test)))
+    lag = LAG(encode='distance', num_clusters=[2,2,2,2,2,2,2,2,2,2], alpha=5, learner=myLLSR(onehot=False))  
+    lag.fit(X_train, y_train)
+    X_train_trans = lag.transform(X_train)
+    X_train_predprob = lag.predict_proba(X_train)
+    print(" --> train acc: %s"%str(lag.score(X_train, y_train)))
+    print(" --> test acc.: %s"%str(lag.score(X_test, y_test)))
     print("------- DONE -------\n")

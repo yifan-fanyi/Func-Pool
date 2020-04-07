@@ -1,7 +1,6 @@
-#v2020.03.19v2
+#v2020.03.19v3
 import numpy as np
 from sklearn.metrics import accuracy_score
-
 class LLSR():
     def __init__(self, onehot=True, normalize=False):
         self.onehot = onehot
@@ -15,19 +14,19 @@ class LLSR():
             y[np.arange(Y.size), Y] = 1
             Y = y.copy()
         A = np.ones((X.shape[0], 1))
-        X = np.concatenate((A, X), axis=1)
+        X = np.concatenate((X, A), axis=1)
         self.weight = np.matmul(np.linalg.pinv(X), Y)
         self.trained = True
 
     def predict(self, X):
         assert (self.trained == True), "Must call fit first!"
-        X = self.predict_proba(X)
-        return np.argmax(X, axis=1)
+        pred = self.predict_proba(X)
+        return np.argmax(pred, axis=1)
 
     def predict_proba(self, X):
         assert (self.trained == True), "Must call fit first!"
         A = np.ones((X.shape[0], 1))
-        X = np.concatenate((A, X), axis=1)
+        X = np.concatenate((X, A), axis=1)
         pred = np.matmul(X, self.weight)
         if self.normalize == True:
             pred = (pred - np.min(pred, axis=1, keepdims=True))/ np.sum((pred - np.min(pred, axis=1, keepdims=True) + 1e-15), axis=1, keepdims=True)
@@ -48,8 +47,9 @@ if __name__ == "__main__":
     print(" input feature shape: %s"%str(X.shape))
     X_train, X_test, y_train, y_test = train_test_split(X, digits.target, test_size=0.2, stratify=digits.target)
     
-    clf = LLSR(onehot=True, normalize=True)
-    clf.fit(X_train, y_train)
-    print(" --> train acc: %s"%str(clf.score(X_train, y_train)))
-    print(" --> test acc: %s"%str(clf.score(X_test, y_test)))
+    reg = LLSR(onehot=True, normalize=False)
+    reg.fit(X_train, y_train)
+    X_train_reg = reg.predict_proba(X_train)
+    print(" --> train acc: %s"%str(reg.score(X_train, y_train)))
+    print(" --> test acc: %s"%str(reg.score(X_test, y_test)))
     print("------- DONE -------\n")
