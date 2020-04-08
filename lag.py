@@ -81,7 +81,6 @@ class LAG():
         Example: if having 10 classes, output size = (N,10)
         '''
         assert (self.trained == True), "Must call fit first!"
-        print("       <Warning>        Currently only support LLSR.")
         X = self.transform(X)
         pred_labels = np.zeros((X.shape[0], self.num_class))
         for km_i in range(self.num_class):
