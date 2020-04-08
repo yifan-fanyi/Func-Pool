@@ -42,6 +42,16 @@ class cwSaab():
         transformed = transformed.reshape(S)
         return saab, transformed, mean
 
+    def judge(self, X, layer):
+        R1 = np.mean(np.abs(X))
+        shrinkArg = self.shrinkArgs[layer]
+        assert ('func' in shrinkArg.keys()), "shrinkArg must contain key 'func'!"
+        X = shrinkArg['func'](X, shrinkArg)
+        R2 = np.mean(np.abs(X))
+        if (R1 / R2 > self.energyTH) or (R2 / R1 > self.energyTH):
+            return True
+        return False
+
     def cwSaab_1_layer(self, X, train):
         S = list(X.shape)
         S[-1] = 1
@@ -81,7 +91,7 @@ class cwSaab():
         for i in range(len(saab_prev)):
             for j in range(saab_prev[i].Energy.shape[0]):
                 ct += 1
-                if saab_prev[i].Energy[j] < self.energyTH:
+                if self.judge(X, layer) == False:
                     continue
                 self.split = True
                 X_tmp = X[ct].reshape(S)
