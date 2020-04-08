@@ -7,6 +7,8 @@ echo -e "\033[92m------- <pixelhop.py>\033[0m"
 python3 pixelhop.py
 echo -e "\033[92m------- <cwSaab.py>\033[0m"
 python3 cwSaab.py
+echo -e "\033[92m------- <pixelhop2.py>\033[0m"
+python3 pixelhop2.py
 echo -e "\033[33m########### Test learner\033[0m"
 echo -e "\033[92m------- <llsr.py>\033[0m"
 python3 llsr.py

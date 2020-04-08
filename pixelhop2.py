@@ -1,12 +1,9 @@
 # 2020.04.08
 from cwSaab import cwSaab
 
-def Concat_(X, concatArg):
-    return X
-
 class Pixelhop2(cwSaab):
     def __init__(self, depth=1, TH1=0.01, TH2=0.001, TH3=0.001, SaabArgs=None, shrinkArgs=None, concatArg=None):
-        super().__init__(depth=depth, energyTH=TH1, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg={'func':Concat_})
+        super().__init__(depth=depth, energyTH=TH1, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg={'func':lambda X, concatArg: X})
         self.TH1 = TH1
         self.TH2 = TH2
         self.TH3 = TH3
@@ -38,14 +35,6 @@ if __name__ == "__main__":
         win = shrinkArg['win']
         X = view_as_windows(X, (1,win,win,1), (1,win,win,1))
         return X.reshape(X.shape[0], X.shape[1], X.shape[2], -1)
-
-    def invShrink(X, invshrinkArg):
-        win = invshrinkArg['win']
-        S = X.shape
-        X = X.reshape(S[0], S[1], S[2], -1, 1, win, win, 1)
-        X = np.moveaxis(X, 5, 2)
-        X = np.moveaxis(X, 6, 4)
-        return X.reshape(S[0], win*S[1], win*S[2], -1)
 
     # example callback function for how to concate features from different hops
     def Concat(X, concatArg):
