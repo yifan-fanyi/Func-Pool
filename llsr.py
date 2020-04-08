@@ -15,7 +15,7 @@ class LLSR():
             Y = y.copy()
         A = np.ones((X.shape[0], 1))
         X = np.concatenate((X, A), axis=1)
-        self.weight = np.matmul(np.linalg.pinv(X), Y)
+        self.weight, _, _, _ = np.linalg.lstsq(X, Y)
         self.trained = True
 
     def predict(self, X):
