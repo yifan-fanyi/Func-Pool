@@ -1,4 +1,4 @@
-# 2020.03.31
+# 2020.04.07
 # A generalized version of channel wise Saab
 # Current code accepts <np.array> shape(..., D) as input
 #
@@ -38,9 +38,9 @@ class cwSaab():
         if train == True:
             saab = Saab(num_kernels=SaabArg['num_AC_kernels'], useDC=SaabArg['useDC'], needBias=SaabArg['needBias'])
             saab.fit(X)
-        transformed, dc = saab.transform(X)
+        transformed, mean = saab.transform(X)
         transformed = transformed.reshape(S)
-        return saab, transformed, dc
+        return saab, transformed, mean
 
     def cwSaab_1_layer(self, X, train):
         S = list(X.shape)
@@ -50,26 +50,26 @@ class cwSaab():
             saab_cur = []
         else:
             saab_cur = self.par['Layer'+str(0)]
-        transformed, eng, DC = [], [], []
+        transformed, eng, Mean = [], [], []
         for i in range(X.shape[0]):
             X_tmp = X[i].reshape(S)
             if train == True:
-                saab, tmp_transformed, dc = self.SaabTransform(X_tmp, saab=None, train=True, layer=0)
+                saab, tmp_transformed, mean = self.SaabTransform(X_tmp, saab=None, train=True, layer=0)
                 saab_cur.append(saab)
                 eng.append(saab.Energy)
             else:
                 if len(saab_cur) == i:
                     break
-                _, tmp_transformed, dc = self.SaabTransform(X_tmp, saab=saab_cur[i], train=False, layer=0)
+                _, tmp_transformed, mean = self.SaabTransform(X_tmp, saab=saab_cur[i], train=False, layer=0)
             transformed.append(tmp_transformed)
-            DC.append(dc)
+            Mean.append(mean)
         if train == True:
             self.par['Layer'+str(0)] = saab_cur
             self.Energy.append(np.concatenate(eng, axis=0))
-        return np.concatenate(transformed, axis=-1), DC
+        return np.concatenate(transformed, axis=-1), Mean
 
     def cwSaab_n_layer(self, X, train, layer):
-        output, eng_cur, DC, ct, pidx = [], [], [], -1, 0
+        output, eng_cur, Mean, ct, pidx = [], [], [], -1, 0
         S = list(X.shape)
         S[-1] = 1
         X = np.moveaxis(X, -1, 0)
@@ -86,77 +86,76 @@ class cwSaab():
                 self.split = True
                 X_tmp = X[ct].reshape(S)
                 if train == True:
-                    saab, out_tmp, dc = self.SaabTransform(X_tmp, saab=None, train=True, layer=layer)
+                    saab, out_tmp, mean = self.SaabTransform(X_tmp, saab=None, train=True, layer=layer)
                     saab.Energy *= saab_prev[i].Energy[j]
                     saab_cur.append(saab)
                     eng_cur.append(saab.Energy) 
                 else:
-                    _, out_tmp, dc = self.SaabTransform(X_tmp, saab=saab_cur[pidx], train=False, layer=layer)
+                    _, out_tmp, mean = self.SaabTransform(X_tmp, saab=saab_cur[pidx], train=False, layer=layer)
                     pidx += 1
                 output.append(out_tmp)
-                DC.append(dc)
+                Mean.append(mean)
         if self.split == True:
             output = np.concatenate(output, axis=-1)
             if train == True:
                 self.par['Layer'+str(layer)] = saab_cur
                 self.Energy.append(np.concatenate(eng_cur, axis=0))
-        return output, DC
+        return output, Mean
     
     def fit(self, X):
-        output, DC = [], []
-        X, dc = self.cwSaab_1_layer(X, train=True)
+        output, Mean = [], []
+        X, mean = self.cwSaab_1_layer(X, train=True)
         output.append(X)
-        DC.append(dc)
+        Mean.append(mean)
         for i in range(1, self.depth):
-            X, dc = self.cwSaab_n_layer(X, train=True, layer=i)
+            X, mean = self.cwSaab_n_layer(X, train=True, layer=i)
             if self.split == False:
                 self.depth = i
                 print("       <WARNING> Cannot futher split, actual depth: %s"%str(i))
                 break
             output.append(X)
-            DC.append(dc)
+            Mean.append(mean)
         self.trained = True
         assert ('func' in self.concatArg.keys()), "'concatArg' must have key 'func'!"
         output = self.concatArg['func'](output, self.concatArg)
-        #self.Energy = np.concatenate(self.Energy, axis=0)
-        return output, DC
+        return output, Mean
 
     def transform(self, X):
         assert (self.trained == True), "Must call fit first!"
-        output, DC = [], []
+        output, Mean = [], []
         X, dc = self.cwSaab_1_layer(X, train=False)
         output.append(X)
-        DC.append(dc)
+        Mean.append(dc)
         for i in range(1, self.depth):
-            X, dc = self.cwSaab_n_layer(X, train=False, layer=i)
+            X, mean = self.cwSaab_n_layer(X, train=False, layer=i)
             output.append(X)
-            DC.append(dc)
+            Mean.append(mean)
         assert ('func' in self.concatArg.keys()), "'concatArg' must have key 'func'!"
         output = self.concatArg['func'](output, self.concatArg)
-        return output, DC
+        return output, Mean
     
-    def inv_SaabTransform(self, X, saab, DC, inv_shrinkArg):
+    def inv_SaabTransform(self, X, saab, Mean, inv_shrinkArg):
         assert ('func' in inv_shrinkArg.keys()), "'inv_shrinkArg' must contain key 'func'!"
         S = list(X.shape)
         X = X.reshape(-1, S[-1])
-        X = saab.inverse_transform(X, DC)
+        X = saab.inverse_transform(X, Mean)
         S[-1] = np.array(X.shape)[-1]        
         X = X.reshape(S)
         X = inv_shrinkArg['func'](X, inv_shrinkArg)
         return X
 
-    def inverse_transform(self, X, DC, inv_concatArg, inv_shrinkArgs):
+    def inverse_transform(self, X, Mean, inv_concatArg, inv_shrinkArgs):
         assert (self.trained == True), "Must call fit first!"
         assert ('func' in inv_concatArg.keys()), "'inv_concatArg' must contain key 'func'!"
         X = inv_concatArg['func'](X, inv_concatArg)
         tmp = np.moveaxis(X[self.depth-1], -1, 0)
         for i in range(self.depth-1, -1, -1):
-            res, ct, jj = [], 0, 0
+            res, ct = [], 0
             for j in range(len(self.par['Layer'+str(i)])):
                 num_kernel = self.par['Layer'+str(i)][j].Energy.shape[0]
                 res.append(self.inv_SaabTransform(np.moveaxis(tmp[ct:ct+num_kernel], 0, -1), 
                                                   saab=self.par['Layer'+str(i)][j], 
-                                                  DC=DC[i][j], 
+                                                  Mean=Mean[i][j], 
                                                   inv_shrinkArg=inv_shrinkArgs[i]))
                 ct += num_kernel
             res = np.concatenate(res, axis=-1)  

@@ -6,7 +6,7 @@ import numpy as np
 from saab import Saab
 
 def PixelHop_Neighbour(feature, dilate, pad):
-    dilate = np.array(dilate)
+    dilate = np.array([dilate]).reshape(-1)
     idx = [1, 0, -1]
     H, W = feature.shape[1], feature.shape[2]
     res = feature.copy()
