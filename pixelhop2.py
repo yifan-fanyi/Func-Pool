@@ -1,18 +1,17 @@
-# 2020.04.08
+# 2020.04.09
+import numpy as np 
 from cwSaab import cwSaab
 
 class Pixelhop2(cwSaab):
-    def __init__(self, depth=1, TH1=0.01, TH2=0.001, TH3=0.001, SaabArgs=None, shrinkArgs=None, concatArg=None):
+    def __init__(self, depth=1, TH1=0.01, TH2=0.001, SaabArgs=None, shrinkArgs=None, concatArg=None):
         super().__init__(depth=depth, energyTH=TH1, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg={'func':lambda X, concatArg: X})
         self.TH1 = TH1
         self.TH2 = TH2
-        self.TH3 = TH3
         self.concatArg = concatArg
-    
+
     def select_(self, X):
-        for i in range(self.depth-1):
-            X[i] = X[i][:, :, :, self.Energy[i] > self.TH2]
-        X[self.depth-1] = X[self.depth-1][:, :, :, self.Energy[self.depth-1] > self.TH3]
+        for i in range(self.depth):
+            X[i] = X[i][:, :, :, self.Energy[i] >= self.TH2]
         return X
 
     def fit(self, X):
@@ -56,11 +55,11 @@ if __name__ == "__main__":
 
     print(" --> test inv")
     print(" -----> depth=1")
-    p2 = Pixelhop2(depth=1, TH1=0.01, TH2=0.001, TH3=0.0001, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg)
+    p2 = Pixelhop2(depth=1, TH1=0.01, TH2=0.001, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg)
     output = p2.fit(X)
     output = p2.transform(X)
     print(" -----> depth=2")
-    p2 = Pixelhop2(depth=2, TH1=0.01, TH2=0.001, TH3=0.0001, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg)
+    p2 = Pixelhop2(depth=2, TH1=0.01, TH2=0.001, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg)
     output = p2.fit(X)
     output = p2.transform(X)
     print(output[0].shape, output[1].shape)

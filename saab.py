@@ -31,7 +31,7 @@ class Saab():
         X, dc = self.remove_mean(X.copy(), axis=1)
         if self.num_kernels == -1:
             self.num_kernels = X.shape[-1]
-        pca = PCA(n_components=self.num_kernels, svd_solver='full').fit(X)
+        pca = PCA(n_components=self.num_kernels, svd_solver='auto').fit(X)
         kernels = pca.components_
         energy = pca.explained_variance_ / np.sum(pca.explained_variance_)
         if self.useDC == True:  
