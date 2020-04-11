@@ -37,6 +37,41 @@ class HierNode():
         else:
             return self.kmeans.predict(X)
 
+# cluster on prob vector from learner instead of raw feature 
+class HierNode_fancy():
+    def __init__(self, learner, num_class, num_cluster, metric, isleaf=False, id='R'):
+        self.learner = myLearner(learner=learner, num_class=num_class)
+        self.kmeans = KMeans(n_clusters=num_cluster)
+        self.num_cluster = num_cluster
+        self.metric = metric
+        self.isleaf = isleaf
+        self.id = id
+
+    def metric_(self, X, Y):
+    
+        return self.learner.score(X, Y) > 2
+
+    def fit(self, X, Y):
+        self.learner.fit(X, Y)
+        try:
+            prob = self.learner.predict_proba(X)
+        except:
+            prob = self.learner.predict(X)
+        if self.isleaf == False:
+            self.kmeans.fit(prob)
+        if self.metric_(X, Y) == True:
+            self.isleaf = True
+
+    def predict(self, X):
+        try:
+            prob = self.learner.predict_proba(X)
+        except:
+            prob = self.learner.predict(X)
+        if self.isleaf == True:
+            return prob
+        else:
+            return self.kmeans.predict(prob)
+
 class HierKmeans():
     def __init__(self, depth, learner, num_cluster, metric):
         self.nodes = {}
@@ -53,13 +88,15 @@ class HierKmeans():
         for i in range(self.depth):
             tmp = []
             for j in range(len(tmp_data)):
+                if tmp_data[j]['X'].shape[0] == 0:
+                    continue
+                #tmp_node = HierNode_fancy(learner=self.learner, 
                 tmp_node = HierNode(learner=self.learner, 
                                     num_class=self.num_class, 
                                     num_cluster=self.num_cluster, 
                                     metric=self.metric, 
                                     isleaf=(i==self.depth-1), 
                                     id=tmp_data[j]['id'])
-
                 tmp_node.fit(tmp_data[j]['X'], tmp_data[j]['Y'])
                 label = tmp_node.predict(tmp_data[j]['X'])
                 self.nodes[tmp_data[j]['id']] = copy.deepcopy(tmp_node)
@@ -67,8 +104,6 @@ class HierKmeans():
                     continue
                 for k in range(self.num_cluster):
                     idx = (label == k)
-                    if idx.shape[0] == 0:
-                        continue
                     tmp.append({'X':tmp_data[j]['X'][idx], 'Y':tmp_data[j]['Y'][idx], 'id':tmp_data[j]['id']+str(k)})
             if len(tmp) == 0 and i != self.depth-1:
                 print("       <Warning> depth %s not achieved, actual depth %s"%(str(self.depth), str(i+1)))
@@ -84,6 +119,8 @@ class HierKmeans():
         for i in range(self.depth):
             tmp = []
             for j in range(len(tmp_data)):
+                if tmp_data[j]['X'].shape[0] == 0:
+                    continue
                 if self.nodes[tmp_data[j]['id']].isleaf == True:
                     prob = self.nodes[tmp_data[j]['id']].predict(tmp_data[j]['X'])
                     tmp_pred.append({'prob':prob.reshape(prob.shape[0], -1), 'idx':tmp_data[j]['idx']})
@@ -91,8 +128,6 @@ class HierKmeans():
                 label = self.nodes[tmp_data[j]['id']].predict(tmp_data[j]['X'])
                 for k in range(self.num_cluster):
                     idx = (label == k)
-                    if idx.shape[0] == 0:
-                        continue
                     tmp.append({'X':tmp_data[j]['X'][idx],
                                 'idx':tmp_data[j]['idx'][idx],
                                 'id':tmp_data[j]['id']+str(k)})
