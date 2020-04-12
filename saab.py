@@ -48,7 +48,7 @@ class Saab():
         assert (self.trained == True), "Must call fit first!"
         X = X.astype('float32')
         X -= self.Mean0
-        X, dc = self.remove_mean(X.copy(), axis=1)
+        dc = np.mean(X, axis=1, keepdims=True)
         X = np.matmul(X, np.transpose(self.Kernels))
         if self.needBias == True:
             X += self.Bias
