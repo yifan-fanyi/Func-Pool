@@ -5,11 +5,12 @@
 # Depth goal may not achieved is no nodes's energy is larger than energy threshold or too few SaabArgs/shrinkArgs, (warning generates)
 #
 import numpy as np 
+from sklearn.decomposition import PCA
 
 from saab import Saab
 
 class cwSaab():
-    def __init__(self, depth=1, energyTH=0.01, SaabArgs=None, shrinkArgs=None, concatArg=None):
+    def __init__(self, depth=1, energyTH=0.01, SaabArgs=None, shrinkArgs=None, concatArg=None, splitMode=2):
         self.par = {}
         assert (depth > 0), "'depth' must > 0!"
         self.depth = (int)(depth)
@@ -21,11 +22,41 @@ class cwSaab():
         assert (concatArg != None), "Need parameter 'concatArg'!"
         self.concatArg = concatArg
         self.Energy = []
+        self.splitidx = []
         self.trained = False
         self.split = False
+        self.splitMode = splitMode
         if depth > np.min([len(SaabArgs), len(shrinkArgs)]):
             self.depth = np.min([len(SaabArgs), len(shrinkArgs)])
             print("       <WARNING> Too few 'SaabArgs/shrinkArgs' to get depth %s, actual depth: %s"%(str(depth),str(self.depth)))
+
+    def judge_abs_energy(self, eng):
+        return (eng > self.energyTH)
+
+    def judge_energy_ratio(self, X, R1, layer):
+        X = self.shrinkArgs[layer]['func'](X, self.shrinkArgs[layer])
+        X = X.reshape(-1, X.shape[-1]) - np.mean(X.reshape(-1, X.shape[-1]), axis=1, keepdims=True)
+        pca = PCA(n_components=1, svd_solver='auto').fit(X)
+        R2 = pca.explained_variance_ratio_[0]
+        return (R1 / R2 >= self.energyTH)
+
+    def judge_mean_abs_value(self, X, layer):
+        X = self.shrinkArgs[layer]['func'](X, self.shrinkArgs[layer])
+        tmp = np.moveaxis(X, -1, 0)[0]
+        R1 = np.abs(tmp.reshape(-1, 1))
+        R2 = np.mean(np.abs(X.reshape(-1, X.shape[-1])), axis=-1, keepdims=True)
+        R = np.mean(R2 / R1)
+        return (R > self.energyTH)
+
+    def split_(self, X, eng, layer):
+        if self.splitMode == 0:
+            return self.judge_abs_energy(eng)
+        elif self.splitMode == 1:
+            return self.judge_mean_abs_value(X, layer)
+        elif self.splitMode == 2:
+            return self.judge_energy_ratio(X, eng, layer)
+        else:
+            raise ValueError("Unsupport split mode! Supported: 0, 1, 2")
 
     def SaabTransform(self, X, saab, train, layer):
         shrinkArg, SaabArg = self.shrinkArgs[layer], self.SaabArgs[layer]
@@ -73,16 +104,21 @@ class cwSaab():
         X = np.moveaxis(X, -1, 0)
         saab_prev = self.par['Layer'+str(layer-1)]
         if train == True:
-            saab_cur = []
+            saab_cur, splitidx = [], []
         else:
             saab_cur = self.par['Layer'+str(layer)]
         for i in range(len(saab_prev)):
             for j in range(saab_prev[i].Energy.shape[0]):
                 ct += 1
-                if saab_prev[i].Energy[j] < self.energyTH:
+                X_tmp = X[ct].reshape(S)
+                if train == True:
+                    tidx = self.split_(X_tmp, saab_prev[i].Energy[j], layer)
+                    splitidx.append(tidx)
+                else:
+                    tidx = self.splitidx[layer-1][ct]
+                if tidx == False:
                     continue
                 self.split = True
-                X_tmp = X[ct].reshape(S)
                 if train == True:
                     saab, out_tmp = self.SaabTransform(X_tmp, saab=None, train=True, layer=layer)
                     saab.Energy *= saab_prev[i].Energy[j]
@@ -95,12 +131,13 @@ class cwSaab():
         if self.split == True:
             output = np.concatenate(output, axis=-1)
             if train == True:
+                self.splitidx.append(splitidx)
                 self.par['Layer'+str(layer)] = saab_cur
                 self.Energy.append(np.concatenate(eng_cur, axis=0))
         return output
     
     def fit(self, X):
-        output, Mean = [], []
+        output = []
         X = self.cwSaab_1_layer(X, train=True)
         output.append(X)
         for i in range(1, self.depth):
@@ -204,14 +241,14 @@ if __name__ == "__main__":
 
     print(" --> test inv")
     print(" -----> depth=1")
-    cwsaab = cwSaab(depth=1, energyTH=0.01, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg)
+    cwsaab = cwSaab(depth=1, energyTH=0.1, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg)
     output = cwsaab.fit(X)
     output = cwsaab.transform(X)
     Y = cwsaab.inverse_transform(output, inv_concatArg=inv_concatArg, inv_shrinkArgs=inv_shrinkArgs)
     Y = np.round(Y)
     assert (np.mean(np.abs(X-Y)) < 1e-5), "invcwSaab error!"
     print(" -----> depth=2")
-    cwsaab = cwSaab(depth=2, energyTH=0.01, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg)
+    cwsaab = cwSaab(depth=2, energyTH=0.5, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg, splitMode=2)
     output = cwsaab.fit(X)
     output = cwsaab.transform(X)
     Y = cwsaab.inverse_transform(output, inv_concatArg=inv_concatArg, inv_shrinkArgs=inv_shrinkArgs)

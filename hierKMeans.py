@@ -1,4 +1,4 @@
-# 2020.04.11
+# 2020.04.14
 import numpy as np 
 import copy
 from sklearn.cluster import KMeans
@@ -48,7 +48,7 @@ class HierNode_fancy():
         self.id = id
 
     def metric_(self, X, Y):
-        if X.shape[0] < self.num_cluster*10 or self.learner.score(X, Y) > 0.9:
+        if X.shape[0] < self.num_cluster*10 or self.learner.score(X, Y) > 1:
             return True
         return False
 
@@ -58,10 +58,10 @@ class HierNode_fancy():
             prob = self.learner.predict_proba(X)
         except:
             prob = self.learner.predict(X)
-        if self.isleaf == False:
-            self.kmeans.fit(prob)
         if self.metric_(X, Y) == True:
             self.isleaf = True
+        if self.isleaf == False:
+            self.kmeans.fit(prob)
 
     def predict(self, X):
         try:
@@ -155,7 +155,6 @@ if __name__ == "__main__":
     from sklearn import datasets
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.model_selection import train_test_split
-    '''
     print(" > This is a test example: ")
     digits = datasets.load_digits()
     X = digits.images.reshape((len(digits.images), -1))
@@ -168,46 +167,3 @@ if __name__ == "__main__":
     print(" --> train acc: %s"%str(clf.score(X_train, y_train)))
     print(" --> test acc.: %s"%str(clf.score(X_test, y_test)))
     print("------- DONE -------\n")
-    '''
-    import cv2
-    x = cv2.imread('train.jpg')
-    y = cv2.imread('gt.jpg', 0)
-    y = cv2.GaussianBlur(y, (5,5), 2)
-    y = y.astype('float64')
-    y /= 255
-    y *= 5
-    y = y.astype('int16')
-    
-    from cwSaab import cwSaab
-    from skimage.util import view_as_windows
-
-    def Shrink(X, shrinkArg):
-        win = shrinkArg['win']
-        X = np.pad(X, ((0,0),(win//2,win//2),(win//2,win//2),(0,0)), 'reflect')
-        X = view_as_windows(X, (1,win,win,1), (1,1,1,1))
-        return X.reshape(X.shape[0], X.shape[1], X.shape[2], -1)
-
-    def Concat(X, concatArg):
-        X = np.concatenate(X, axis=-1)
-        return X
-
-    SaabArgs = [{'num_AC_kernels':-1, 'needBias':False, 'useDC':True, 'batch':None}, 
-                {'num_AC_kernels':-1, 'needBias':True, 'useDC':True, 'batch':None}]
-    shrinkArgs = [{'func':Shrink, 'win':5}, 
-                {'func': Shrink, 'win':5}]
-    concatArg = {'func':Concat}
-    inv_concatArg = {'func':Concat}
-
-    X = x.reshape(1,321,481,3)
-    cwsaab = cwSaab(depth=2, energyTH=0.01, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg)
-    output, DC = cwsaab.fit(X)
-    X = output.reshape(-1, output.shape[-1])
-    Y = y.reshape(-1, 1)
-
-    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, stratify=Y)
-    
-    clf = HierKmeans(depth=3, learner=RandomForestClassifier(n_jobs=-1), num_cluster=3, metric=None)
-    clf.fit(X_train, y_train)
-    print(" --> train acc: %s"%str(clf.score(X_train, y_train)))
-    print(" --> test acc.: %s"%str(clf.score(X_test, y_test)))
-

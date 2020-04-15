@@ -1,10 +1,10 @@
-# 2020.04.09
+# 2020.04.14
 import numpy as np 
 from cwSaab import cwSaab
 
 class Pixelhop2(cwSaab):
-    def __init__(self, depth=1, TH1=0.01, TH2=0.001, SaabArgs=None, shrinkArgs=None, concatArg=None):
-        super().__init__(depth=depth, energyTH=TH1, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg={'func':lambda X, concatArg: X})
+    def __init__(self, depth=1, TH1=0.01, TH2=0.001, SaabArgs=None, shrinkArgs=None, concatArg=None, splitMode=2):
+        super().__init__(depth=depth, energyTH=TH1, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg={'func':lambda X, concatArg: X}, splitMode=splitMode)
         self.TH1 = TH1
         self.TH2 = TH2
         self.concatArg = concatArg
@@ -15,12 +15,12 @@ class Pixelhop2(cwSaab):
         return X
 
     def fit(self, X):
-        X, _ = super().fit(X)
+        X = super().fit(X)
         X = self.select_(X)
         return self.concatArg['func'](X, self.concatArg)
 
     def transform(self, X):
-        X, _ = super().transform(X)
+        X = super().transform(X)
         X = self.select_(X)
         return self.concatArg['func'](X, self.concatArg)
 
