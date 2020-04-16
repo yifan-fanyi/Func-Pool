@@ -51,7 +51,7 @@ class Saab():
             X += self.Bias
         X = np.matmul(X, np.transpose(self.Kernels))
         if self.needBias == True and self.useDC == True:
-            X[0] -= self.Bias
+            X[:, 0] -= self.Bias
         return X
     
     def inverse_transform(self, X):
