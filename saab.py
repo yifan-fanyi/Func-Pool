@@ -60,7 +60,7 @@ class Saab():
             print("       <Warning> May result larger reconstruction error!")
         X  = X.astype('float32')
         if self.needBias == True and self.useDC == True:
-            X[0] += self.Bias
+            X[:, 0] += self.Bias
         X = np.matmul(X, self.Kernels)
         if self.needBias == True:
             X -= self.Bias 
