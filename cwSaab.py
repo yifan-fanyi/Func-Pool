@@ -10,7 +10,7 @@ from sklearn.decomposition import PCA
 from saab import Saab
 
 class cwSaab():
-    def __init__(self, depth=1, energyTH=0.01, SaabArgs=None, shrinkArgs=None, concatArg=None, splitMode=2):
+    def __init__(self, depth=1, energyTH=0.01, SaabArgs=None, shrinkArgs=None, concatArg=None, splitMode=2, cwHop1=False):
         self.par = {}
         assert (depth > 0), "'depth' must > 0!"
         self.depth = (int)(depth)
@@ -26,6 +26,7 @@ class cwSaab():
         self.trained = False
         self.split = False
         self.splitMode = splitMode
+        self.cwHop1 = cwHop1
         if depth > np.min([len(SaabArgs), len(shrinkArgs)]):
             self.depth = np.min([len(SaabArgs), len(shrinkArgs)])
             print("       <WARNING> Too few 'SaabArgs/shrinkArgs' to get depth %s, actual depth: %s"%(str(depth),str(self.depth)))
@@ -71,8 +72,25 @@ class cwSaab():
             saab.fit(X)
         transformed = saab.transform(X).reshape(S)
         return saab, transformed
-    
+
     def cwSaab_1_layer(self, X, train):
+        if train == True:
+            saab_cur = []
+        else:
+            saab_cur = self.par['Layer'+str(0)]
+        transformed, eng = [], []
+        if train == True:
+            saab, transformed = self.SaabTransform(X, saab=None, train=True, layer=0)
+            saab_cur.append(saab)
+            eng.append(saab.Energy)
+        else:
+            _, transformed = self.SaabTransform(X, saab=saab_cur[0], train=False, layer=0)
+        if train == True:
+            self.par['Layer'+str(0)] = saab_cur
+            self.Energy.append(np.concatenate(eng, axis=0))
+        return transformed
+
+    def cwSaab_1_layer_cw(self, X, train):
         S = list(X.shape)
         S[-1] = 1
         X = np.moveaxis(X, -1, 0)
@@ -138,7 +156,10 @@ class cwSaab():
     
     def fit(self, X):
         output = []
-        X = self.cwSaab_1_layer(X, train=True)
+        if self.cwHop1 == False:
+            X = self.cwSaab_1_layer(X, train=True)
+        else:
+            X = self.cwSaab_1_layer_cw(X, train=True)
         output.append(X)
         for i in range(1, self.depth):
             X = self.cwSaab_n_layer(X, train=True, layer=i)
@@ -156,7 +177,10 @@ class cwSaab():
     def transform(self, X):
         assert (self.trained == True), "Must call fit first!"
         output = []
-        X = self.cwSaab_1_layer(X, train=False)
+        if self.cwHop1 == False:
+            X = self.cwSaab_1_layer(X, train=False)
+        else:
+            X = self.cwSaab_1_layer_cw(X, train=False)
         output.append(X)
         for i in range(1, self.depth):
             X = self.cwSaab_n_layer(X, train=False, layer=i)
@@ -248,7 +272,7 @@ if __name__ == "__main__":
     Y = np.round(Y)
     assert (np.mean(np.abs(X-Y)) < 1e-5), "invcwSaab error!"
     print(" -----> depth=2")
-    cwsaab = cwSaab(depth=2, energyTH=0.5, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg, splitMode=2)
+    cwsaab = cwSaab(depth=2, energyTH=0.5, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg, splitMode=2, cwHop1=True)
     output = cwsaab.fit(X)
     output = cwsaab.transform(X)
     Y = cwsaab.inverse_transform(output, inv_concatArg=inv_concatArg, inv_shrinkArgs=inv_shrinkArgs)
