@@ -55,8 +55,7 @@ class LAG():
                 p_dis = p_dis / np.sum(p_dis)
                 Yt_onehot[i, self.clus_labels == gt] = p_dis            
         elif self.encode == 'onehot':
-            Yt_onehot = np.zeros((X.shape[0], np.unique(Yt).shape[0]))
-            Yt_onehot[np.arange(Y.size), Yt] = 1
+            Yt_onehot = np.eye(len(np.unique(Yt)))[Yt.reshape(-1)]
         else:
             print("       <Warning>        Using raw label for learner.")
             Yt_onehot = Yt
@@ -114,7 +113,7 @@ if __name__ == "__main__":
     print(" input feature shape: %s"%str(X.shape))
     X_train, X_test, y_train, y_test = train_test_split(X, digits.target, test_size=0.2,  stratify=digits.target)
 
-    lag = LAG(encode='distance', num_clusters=[2,2,2,2,2,2,2,2,2,2], alpha=5, learner=myLLSR(onehot=False))  
+    lag = LAG(encode='onehot', num_clusters=[2,2,2,2,2,2,2,2,2,2], alpha=5, learner=myLLSR(onehot=False))  
     lag.fit(X_train, y_train)
     X_train_trans = lag.transform(X_train)
     X_train_predprob = lag.predict_proba(X_train)

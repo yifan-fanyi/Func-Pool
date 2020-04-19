@@ -10,9 +10,7 @@ class LLSR():
 
     def fit(self, X, Y):
         if self.onehot == True:
-            y = np.zeros((X.shape[0], np.unique(Y).shape[0]))
-            y[np.arange(Y.size), Y] = 1
-            Y = y.copy()
+            Y = np.eye(len(np.unique(Y)))[Y.reshape(-1)]
         A = np.ones((X.shape[0], 1))
         X = np.concatenate((X, A), axis=1)
         self.weight, _, _, _ = np.linalg.lstsq(X, Y, rcond=None)
