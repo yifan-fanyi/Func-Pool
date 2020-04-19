@@ -86,10 +86,9 @@ class Cross_Entropy():
             for j in range(self.num_class):
                 prob[i, j] = (float)(tmp[tmp == j].shape[0]) / ((float)(Y[Y==j].shape[0]) + 1e-5)
         prob = (prob)/(np.sum(prob, axis=1).reshape(-1,1) + 1e-5)
-        y = np.zeros((Y.shape[0], self.num_class))
-        y[np.arange(Y.size), Y] = 1
+        Y = np.eye(len(np.unique(Y)))[Y.reshape(-1)]
         probab = prob[kmeans.labels_]
-        return sklearn.metrics.log_loss(y, probab)/math.log(self.num_class)
+        return sklearn.metrics.log_loss(Y, probab)/math.log(self.num_class)
 
     # new machine learning based cross entropy
     def ML_Cross_Entropy(self, X, Y, learner):
