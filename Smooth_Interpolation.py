@@ -68,17 +68,35 @@ class Smooth_Interpolation():
         return X
 
     def add_zeros_block(self, X):
-        X = np.concatenate((X, np.zeros_like(X)), axis=1)
-        X = np.concatenate((X, np.zeros_like(X)), axis=2)
+        X = np.concatenate((X, np.zeros((X.shape[0], self.targetN - self.initN, X.shape[2], 1))), axis=1)
+        X = np.concatenate((X, np.zeros((X.shape[0], X.shape[1], self.targetN - self.initN, 1))), axis=2)
+        return X
+
+    def remove_zigzag_(self, X):
+        zigzag1 = ZigZag(N=self.initN)
+        zigzag2 = ZigZag(N=self.targetN)
+        X = zigzag1.transform(X).reshape(X.shape[0], -1)
+        X = X[:, :self.targetN**2]
+        X = zigzag2.inverse_transform(X).reshape(X.shape[0], self.targetN, self.targetN, 1)
+        return X
+
+    def remove_block_(self, X):
+        X = X[:, :self.targetN, :self.targetN]
         return X
 
     def transform(self, X):
-        assert (X.shape[1] == self.initN and X.shape[2] == self.initN), "<Error> Input shape not match!"
+        assert (X.shape[1] ==  X.shape[2]), "<Error> Input shape not match!"
         X = self.dct1.transform(X)
-        if self.mode == 'zigzag':
-            X = self.add_zeros_zigzag(X)
-        elif self.mode == 'block':
-            X = self.add_zeros_block(X)
+        if self.initN < self.targetN:
+            if self.mode == 'zigzag':
+                X = self.add_zeros_zigzag(X)
+            elif self.mode == 'block':
+                X = self.add_zeros_block(X)
+        elif self.initN > self.targetN:
+            if self.mode == 'zigzag':
+                X = self.remove_zigzag_(X)
+            elif self.mode == 'block':
+                X = self.remove_block_(X)
         X = self.dct2.inverse_transform(X)
         return X.reshape(X.shape[0], self.targetN, self.targetN, 1)
 
@@ -87,7 +105,7 @@ if __name__ == "__main__":
     print(" > This is a test example for Smooth_Interpolation.")
     digits = datasets.load_digits()
     X = digits.images.reshape((len(digits.images), 8, 8, 1))[:10]
-    si = Smooth_Interpolation(initN=8, targetN=16, mode='zigzag')
+    si = Smooth_Interpolation(initN=8, targetN=16, mode='block')
 
     Y = si.transform(X)
 
