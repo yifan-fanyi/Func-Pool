@@ -1,4 +1,4 @@
-# v2020.03.19
+# v2020.04.24
 #
 # class Cross_Entropy()
 #   Compute cross entropy across each feature for feature selection
@@ -27,11 +27,11 @@ class Cross_Entropy():
         mybin = np.zeros((self.num_bin, self.num_class))
         b = x.astype('int64')
         b[b == self.num_bin] -= 1
-        for i in range(x.shape[0]):
-            mybin[b[i],y[i]] += 1.
-        for l in range(0,self.num_class):
+        for i in range(b.shape[0]):
+            mybin[b[i], y[i]] += 1.
+        for l in range(0, self.num_class):
             p = np.array(y[ y==l ]).shape[0]
-            mybin[:,l] /= (float)(p)
+            mybin[:, l] /= (float)(p)
         return np.argmax(mybin, axis=1)
     
     def kmeans_process(self, x, y):
@@ -39,11 +39,11 @@ class Cross_Entropy():
         mybin = np.zeros((self.num_bin, self.num_class))
         b = kmeans.labels_.astype('int64')
         b[b == self.num_bin] -= 1
-        for i in range(x.shape[0]):
-            mybin[b[i],y[i]] += 1.
-        for l in range(0,self.num_class):
+        for i in range(b.shape[0]):
+            mybin[b[i], y[i]] += 1.
+        for l in range(0, self.num_class):
             p = np.array(y[ y==l ]).shape[0]
-            mybin[:,l] /= (float)(p)
+            mybin[:, l] /= (float)(p)
         return np.argmax(mybin, axis=1)
 
     def compute_prob(self, x, y):
@@ -54,12 +54,13 @@ class Cross_Entropy():
             for l in range(0, self.num_class):
                 p = mybin[mybin == l]
                 p = np.array(p).shape[0]
-                prob[l,k] = p / (float)(self.num_bin)
+                prob[l, k] = p / (float)(self.num_bin)
         return prob
 
     def compute(self, x, y, class_weight=None):
         x = x.astype('float64')
         y = y.astype('int64')
+        y = y.reshape(-1, 1)
         prob = self.compute_prob(x, y)
         prob = -1 * np.log10(prob + 1e-5) / np.log10(self.num_class)
         y = np.moveaxis(y, 0, 1)
@@ -72,7 +73,7 @@ class Cross_Entropy():
         if class_weight != None:
             class_weight = np.array(class_weight)
             H *= class_weight.reshape(class_weight.shape[0],1) * self.num_class
-        return np.sum(H, axis=0)
+        return np.mean(H, axis=0)
 
     # new cross entropy
     def KMeans_Cross_Entropy(self, X, Y):
@@ -114,6 +115,7 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(X, digits.target, test_size=0.2,  stratify=digits.target)
     
     ce = Cross_Entropy(num_class=10, num_bin=10)
+    print(" --> bin ce: %s"%str(ce.compute(X_train, y_train.reshape(-1, 1))))
     print(" --> KMeans ce: %s"%str(ce.KMeans_Cross_Entropy(X_train, y_train)))
     print(" --> ML ce: %s"%str(ce.ML_Cross_Entropy(X_train, y_train, learner=RandomForestClassifier())))
     print("------- DONE -------\n")
