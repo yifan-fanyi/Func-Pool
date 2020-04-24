@@ -27,7 +27,8 @@ class Cross_Entropy():
         mybin = np.zeros((self.num_bin, self.num_class))
         b = x.astype('int64')
         b[b == self.num_bin] -= 1
-        mybin[b,y] += 1.
+        for i in range(x.shape[0]):
+            mybin[b[i],y[i]] += 1.
         for l in range(0,self.num_class):
             p = np.array(y[ y==l ]).shape[0]
             mybin[:,l] /= (float)(p)
@@ -38,7 +39,8 @@ class Cross_Entropy():
         mybin = np.zeros((self.num_bin, self.num_class))
         b = kmeans.labels_.astype('int64')
         b[b == self.num_bin] -= 1
-        mybin[b,y] += 1.
+        for i in range(x.shape[0]):
+            mybin[b[i],y[i]] += 1.
         for l in range(0,self.num_class):
             p = np.array(y[ y==l ]).shape[0]
             mybin[:,l] /= (float)(p)
