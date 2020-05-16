@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 
 class Saab():
-    def __init__(self, num_kernels=-1, useDC=True, needBias=True, isInteger=False, bits=8):
+    def __init__(self, num_kernels=-1, useDC=True, needBias=True, isInteger=False, bits=8, opType='int64'):
         self.par = None
         self.Kernels = []
         self.Bias = []
@@ -19,6 +19,7 @@ class Saab():
         self.trained = False
         self.bits = bits
         self.isInteger = isInteger
+        self.opType = opType
 
     def remove_mean(self, X, axis):
         feature_mean = np.mean(X, axis=axis, keepdims=True)
@@ -53,6 +54,7 @@ class Saab():
         if self.isInteger == True:
             self.to_int_()
         self.trained = True
+        return self
         
     def transform(self, X):
         assert (self.trained == True), "Must call fit first!"
@@ -65,7 +67,7 @@ class Saab():
         if self.needBias == True and self.useDC == True:
             X[:, 0] -= self.Bias
         if self.isInteger == True:
-            X = X.astype('int32')
+            X = X.astype(self.opType)
         return X
     
     def inverse_transform(self, X):
@@ -81,7 +83,7 @@ class Saab():
         if self.useDC == True:
             X += self.Mean0
         if self.isInteger == True:
-            X = np.round(X / pow(2, 2 * self.bits)).astype('int32')
+            X = np.round(X / pow(2, 2 * self.bits)).astype(self.opType)
         return X
 
 if __name__ == "__main__":

@@ -57,6 +57,7 @@ class Pixelhop():
         X = X.reshape(-1, X.shape[-1])
         self.saab.fit(X)
         self.trained = True
+        return self
     
     def transform(self, X):
         assert (self.trained == True), "Call fit first!"

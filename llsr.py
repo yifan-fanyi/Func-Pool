@@ -15,6 +15,7 @@ class LLSR():
         X = np.concatenate((X, A), axis=1)
         self.weight, _, _, _ = np.linalg.lstsq(X, Y, rcond=None)
         self.trained = True
+        return self
 
     def predict(self, X):
         assert (self.trained == True), "Must call fit first!"

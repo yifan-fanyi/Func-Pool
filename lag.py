@@ -61,6 +61,7 @@ class LAG():
             Yt_onehot = Yt
         self.learner.fit(X, Yt_onehot)
         self.trained = True
+        return self
         
     def transform(self, X):
         '''

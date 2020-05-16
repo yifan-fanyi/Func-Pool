@@ -51,6 +51,7 @@ class myLearner():
         else:
             self.learner.fit(X, Y)
         self.trained = True
+        return self
 
     def predict(self, X): 
         assert (self.trained == True), "Must call fit first!"

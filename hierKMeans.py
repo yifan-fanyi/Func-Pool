@@ -29,6 +29,7 @@ class HierNode():
             self.isleaf = True
         if self.isleaf == True:
             self.learner.fit(X, Y)
+        return self
     
     def predict(self, X):
         if self.isleaf == True:

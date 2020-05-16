@@ -10,7 +10,7 @@ from sklearn.decomposition import PCA
 from saab import Saab
 
 class cwSaab():
-    def __init__(self, depth=1, energyTH=0.01, SaabArgs=None, shrinkArgs=None, concatArg=None, splitMode=2, cwHop1=False):
+    def __init__(self, depth=1, energyTH=0.01, SaabArgs=None, shrinkArgs=None, concatArg=None, splitMode=2, cwHop1=False, opType='int32'):
         self.par = {}
         assert (depth > 0), "'depth' must > 0!"
         self.depth = (int)(depth)
@@ -27,6 +27,7 @@ class cwSaab():
         self.split = False
         self.splitMode = splitMode
         self.cwHop1 = cwHop1
+        self.opType = opType
         if depth > np.min([len(SaabArgs), len(shrinkArgs)]):
             self.depth = np.min([len(SaabArgs), len(shrinkArgs)])
             print("       <WARNING> Too few 'SaabArgs/shrinkArgs' to get depth %s, actual depth: %s"%(str(depth),str(self.depth)))
@@ -68,7 +69,12 @@ class cwSaab():
         if SaabArg['num_AC_kernels'] != -1:
             S[-1] = SaabArg['num_AC_kernels']
         if train == True:
-            saab = Saab(num_kernels=SaabArg['num_AC_kernels'], useDC=SaabArg['useDC'], needBias=SaabArg['needBias'])
+            isInteger, bits = False, 8
+            if 'isInteger' in SaabArg.keys():
+                isInteger = SaabArg['isInteger']
+            if 'bits' in SaabArg.keys():
+                bits = SaabArg['bits'] 
+            saab = Saab(num_kernels=SaabArg['num_AC_kernels'], useDC=SaabArg['useDC'], needBias=SaabArg['needBias'], isInteger=isInteger, bits=bits, opType=self.opType)
             saab.fit(X)
         transformed = saab.transform(X).reshape(S)
         return saab, transformed
@@ -170,9 +176,7 @@ class cwSaab():
             output.append(X)
             self.split = False
         self.trained = True
-        assert ('func' in self.concatArg.keys()), "'concatArg' must have key 'func'!"
-        output = self.concatArg['func'](output, self.concatArg)
-        return output
+        return self
 
     def transform(self, X):
         assert (self.trained == True), "Must call fit first!"
@@ -257,8 +261,10 @@ if __name__ == "__main__":
     SaabArgs = [{'num_AC_kernels':-1, 'needBias':False, 'useDC':False, 'batch':None}, 
                 {'num_AC_kernels':-1, 'needBias':True, 'useDC':False, 'batch':None}]
     shrinkArgs = [{'func':Shrink, 'win':2}, 
+                {'func': Shrink, 'win':2},
                 {'func': Shrink, 'win':2}]
     inv_shrinkArgs = [{'func':invShrink, 'win':2}, 
+                    {'func': invShrink, 'win':2},
                     {'func': invShrink, 'win':2}]
     concatArg = {'func':Concat}
     inv_concatArg = {'func':Concat}
@@ -272,7 +278,7 @@ if __name__ == "__main__":
     Y = np.round(Y)
     assert (np.mean(np.abs(X-Y)) < 1e-5), "invcwSaab error!"
     print(" -----> depth=2")
-    cwsaab = cwSaab(depth=2, energyTH=0.5, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg, splitMode=2, cwHop1=True)
+    cwsaab = cwSaab(depth=2, energyTH=0.5, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg, splitMode=0, cwHop1=True)
     output = cwsaab.fit(X)
     output = cwsaab.transform(X)
     Y = cwsaab.inverse_transform(output, inv_concatArg=inv_concatArg, inv_shrinkArgs=inv_shrinkArgs)

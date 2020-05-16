@@ -53,6 +53,7 @@ class QBC():
             xt = np.delete(xt, idx, axis=0)
             yt = np.delete(yt, idx, axis=0)
             print('       end iter -> %3s using %10s seconds\n'%(str(k),str(time.time()-t0)))
+        return self
 
     def predict_proba(self, x):
         assert (self.trained == True), "Must call fit first!"

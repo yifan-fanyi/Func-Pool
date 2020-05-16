@@ -16,8 +16,7 @@ class Pixelhop2(cwSaab):
 
     def fit(self, X):
         X = super().fit(X)
-        X = self.select_(X)
-        return self.concatArg['func'](X, self.concatArg)
+        return self
 
     def transform(self, X):
         X = super().transform(X)
