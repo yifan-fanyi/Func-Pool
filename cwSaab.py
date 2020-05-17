@@ -1,4 +1,4 @@
-# 2020.04.07
+# 2020.05.15
 # A generalized version of channel wise Saab
 # Current code accepts <np.array> shape(..., D) as input
 #
@@ -10,7 +10,7 @@ from sklearn.decomposition import PCA
 from saab import Saab
 
 class cwSaab():
-    def __init__(self, depth=1, energyTH=0.01, SaabArgs=None, shrinkArgs=None, concatArg=None, splitMode=2, cwHop1=False, opType='int32'):
+    def __init__(self, depth=1, energyTH=0.01, SaabArgs=None, shrinkArgs=None, concatArg=None, splitMode=2, cwHop1=False):
         self.par = {}
         assert (depth > 0), "'depth' must > 0!"
         self.depth = (int)(depth)
@@ -27,7 +27,6 @@ class cwSaab():
         self.split = False
         self.splitMode = splitMode
         self.cwHop1 = cwHop1
-        self.opType = opType
         if depth > np.min([len(SaabArgs), len(shrinkArgs)]):
             self.depth = np.min([len(SaabArgs), len(shrinkArgs)])
             print("       <WARNING> Too few 'SaabArgs/shrinkArgs' to get depth %s, actual depth: %s"%(str(depth),str(self.depth)))
@@ -69,12 +68,14 @@ class cwSaab():
         if SaabArg['num_AC_kernels'] != -1:
             S[-1] = SaabArg['num_AC_kernels']
         if train == True:
-            isInteger, bits = False, 8
+            isInteger, bits, opType = False, 8, 'int32'
             if 'isInteger' in SaabArg.keys():
                 isInteger = SaabArg['isInteger']
             if 'bits' in SaabArg.keys():
                 bits = SaabArg['bits'] 
-            saab = Saab(num_kernels=SaabArg['num_AC_kernels'], useDC=SaabArg['useDC'], needBias=SaabArg['needBias'], isInteger=isInteger, bits=bits, opType=self.opType)
+            if 'opType' in SaabArg.keys():
+                opType = SaabArg['opType'] 
+            saab = Saab(num_kernels=SaabArg['num_AC_kernels'], useDC=SaabArg['useDC'], needBias=SaabArg['needBias'], isInteger=isInteger, bits=bits, opType=opType)
             saab.fit(X)
         transformed = saab.transform(X).reshape(S)
         return saab, transformed
@@ -222,7 +223,7 @@ class cwSaab():
                 tmp = np.moveaxis(X[i-1], -1, 0)
                 ct = 0
                 for j in range(tmp.shape[0]):
-                    if self.Energy[i-1][j] > self.energyTH:
+                    if self.splitidx[i-1][j] == True:
                         tmp[j] = res[ct]
                         ct+=1
         return res

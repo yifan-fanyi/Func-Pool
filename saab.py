@@ -28,16 +28,16 @@ class Saab():
     
     def to_int_(self):
         assert (self.useDC == False), "Integer transformation is only supported when 'useDC=False'!"
-        self.Bias = np.round(self.Bias * pow(2, self.bits)+1).astype('int32')
-        self.Kernels = np.round(self.Kernels * pow(2, self.bits)).astype('int32')
-        self.Mean0 = np.round(self.Mean0 * pow(2, self.bits)).astype('int32')
+        self.Bias = np.round(self.Bias * pow(2, self.bits)+1).astype(self.opType)
+        self.Kernels = np.round(self.Kernels * pow(2, self.bits)).astype(self.opType)
+        self.Mean0 = np.round(self.Mean0 * pow(2, self.bits)).astype(self.opType)
         
     def fit(self, X): 
         assert (len(X.shape) == 2), "Input must be a 2D array!"
         X = X.astype('float32')
         if self.useDC == True:
-            X, self.Mean0 = self.remove_mean(X.copy(), axis=0)
-        X, dc = self.remove_mean(X.copy(), axis=1)
+            X, dc = self.remove_mean(X.copy(), axis=1)
+        X, self.Mean0 = self.remove_mean(X.copy(), axis=0)
         self.Bias = np.max(np.linalg.norm(X, axis=1)) * 1 / np.sqrt(X.shape[1])
         if self.num_kernels == -1:
             self.num_kernels = X.shape[-1]
