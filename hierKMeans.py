@@ -1,4 +1,4 @@
-# 2020.04.23
+# 2020.05.17
 import numpy as np 
 import copy
 from sklearn.cluster import KMeans
@@ -18,7 +18,7 @@ class HierNode():
 
     def metric_(self, X, Y):
         if 'func' in self.metric.keys():
-            return self.metric['func'](X, self.metric)
+            return self.metric['func'](X, Y, self.metric)
         if X.shape[0] < self.num_cluster * self.metric['min_num_sample']:
             return True
         return False
@@ -53,7 +53,7 @@ class HierNode_fancy():
 
     def metric_(self, X, Y):
         if 'func' in self.metric.keys():
-            return self.metric['func'](X, self.metric)
+            return self.metric['func'](X, Y, self.metric)
         if X.shape[0] < self.num_cluster * self.metric['min_num_sample']:
             return True
         if self.learner.score(X, Y) > self.metric['purity']:
@@ -99,11 +99,10 @@ class HierNode_query():
 
     def metric_(self, X):
         if 'func' in self.metric.keys():
-            return self.metric['func'](X, self.metric)
+            return self.metric['func'](X, Y, self.metric)
         if X.shape[0] < self.num_cluster * self.metric['min_num_sample']:
             return True
         l2 = euclidean_distances(X, np.mean(X, axis=0, keepdims=True))
-        #print('l2',np.mean(l2))
         if np.mean(l2) < self.metric['mse']:
             return True
         return False
