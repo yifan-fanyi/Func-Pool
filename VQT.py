@@ -76,7 +76,7 @@ class VQT():
                 self.depth = i
                 break
             tmp_data = tmp
-        print("       <INFP> Get %s Nodes!"%str(self.num_node))
+        print("    <INFO> Get %s Nodes!"%str(self.num_node))
         self.trained = True
 
     def check_continue_1by1(self, X, MSE_target, parentID):
