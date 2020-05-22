@@ -1,10 +1,8 @@
-# v2020.05.14
+# v2020.05.22
 # block hierarchy
 import numpy as np 
 
 from framework.cwSaab import cwSaab
-import warnings
-warnings.filterwarnings("ignore")
 
 class BH(cwSaab):
     def __init__(self, block=4, depth=3, TH1=0.001, TH2=0.0001, SaabArgs=None, shrinkArgs=None, inv_shrinkArgs=None):
@@ -20,6 +18,7 @@ class BH(cwSaab):
         self.outShape = []
         self.inv_shrinkArgs = inv_shrinkArgs
         self.saveidx = []
+        self.trained = False
          
     def concat(self, X, Arg):
         return X
@@ -37,17 +36,19 @@ class BH(cwSaab):
         for j in range(len(self.Energy[-1])):
             idx.append(self.Energy[-1][j] >= self.TH2)
         self.saveidx.append(idx)
+        self.trained = True
         return self
 
-    def encode(self, X):
-        print(len(self.saveidx))
-        X = self.transform(X)
+    def transform(self, X):
+        assert (self.trained == True), "Must call fit first!"
+        X = super().transform(X)
         for i in range(self.depth-1):
             self.outShape.append(X[i].shape)
             X[i] = X[i][:, :, :, self.saveidx[i]]
         return X 
 
-    def decode(self, X):
+    def inverse_transform(self, X):
+        assert (self.trained == True), "Must call fit first!"
         tmp = []
         for i in range(self.depth-1):
             tt = np.zeros(self.outShape[i])
@@ -58,6 +59,27 @@ class BH(cwSaab):
                     ct += 1
             tmp.append(tt)
         tmp.append(X[-1])
-        X = self.inverse_transform(tmp, inv_concatArg={'func':self.concat}, inv_shrinkArgs=self.inv_shrinkArgs)
+        X = super().inverse_transform(tmp, inv_concatArg={'func':self.concat}, inv_shrinkArgs=self.inv_shrinkArgs)
         return X
     
+if __name__ == "__main__":
+    from framework.evaluate import *
+    from utli import *
+    import cv2
+
+    X = cv2.imread('Y.jpg', 0)
+    print('input shape: ',X.shape)
+    X = X.reshape(1, 512, 768, 1)
+
+    SaabArgs = [{'num_AC_kernels':-1, 'needBias':False, 'useDC':False, 'batch':None, 'isInteger':True, 'bits':12, 'opType':'int64'}, 
+                {'num_AC_kernels':-1, 'needBias':False, 'useDC':False, 'batch':None, 'isInteger':True, 'bits':12, 'opType':'int64'}]
+    shrinkArgs = [{'func':Shrink, 'win':4}, 
+                {'func': Shrink, 'win':4}]
+    inv_shrinkArgs = [{'func':invShrink, 'win':4}, 
+                    {'func': invShrink, 'win':4}]
+
+    b = BH(block=4, depth=2, TH1=0.01, TH2=0.001, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, inv_shrinkArgs=inv_shrinkArgs)
+    b.fit(X)
+    eX = b.transform(X)
+    dX = b.inverse_transform(eX)
+    print('PSNR: ', PSNR(X, dX))
