@@ -1,4 +1,4 @@
-# v2020.05.11
+# v2020.05.29
 
 # Saab transformation
 # modeiled from https://github.com/davidsonic/Interpretable_CNN
@@ -6,6 +6,7 @@
 import numpy as np
 from sklearn.decomposition import PCA
 
+from myPCA import myPCA
 class Saab():
     def __init__(self, num_kernels=-1, useDC=True, needBias=True, isInteger=False, bits=8, opType='int64'):
         self.par = None
@@ -32,7 +33,7 @@ class Saab():
         self.Kernels = np.round(self.Kernels * pow(2, self.bits)).astype(self.opType)
         self.Mean0 = np.round(self.Mean0 * pow(2, self.bits)).astype(self.opType)
         
-    def fit(self, X): 
+    def fit(self, X, whichPCA='numpy'): 
         assert (len(X.shape) == 2), "Input must be a 2D array!"
         X = X.astype('float32')
         if self.useDC == True:
@@ -41,14 +42,15 @@ class Saab():
         self.Bias = np.max(np.linalg.norm(X, axis=1)) * 1 / np.sqrt(X.shape[1])
         if self.num_kernels == -1:
             self.num_kernels = X.shape[-1]
-        pca = PCA(n_components=self.num_kernels, svd_solver='auto').fit(X)
-        kernels = pca.components_
-        energy = pca.explained_variance_ / np.sum(pca.explained_variance_)
+        pca = myPCA(n_components=self.num_kernels, isInteger=False)
+        pca.fit(X, whichPCA=whichPCA)
+        kernels = pca.Kernels
+        energy = pca.Energy_ratio
         if self.useDC == True:  
             largest_ev = np.var(dc * np.sqrt(X.shape[-1]))     
             dc_kernel = 1 / np.sqrt(X.shape[-1]) * np.ones((1, X.shape[-1])) / np.sqrt(largest_ev)
             kernels = np.concatenate((dc_kernel, kernels[:-1]), axis=0)
-            energy = np.concatenate((np.array([largest_ev]), pca.explained_variance_[:-1]), axis=0)
+            energy = np.concatenate((np.array([largest_ev]), pca.Energy[:-1]), axis=0)
             energy = energy / np.sum(energy)
         self.Kernels, self.Energy = kernels, energy
         if self.isInteger == True:
@@ -97,7 +99,7 @@ if __name__ == "__main__":
     X = data.copy()
     X = X.reshape(X.shape[0], -1)[0:100]
     saab = Saab(num_kernels=-1, useDC=True, needBias=False)
-    saab.fit(X)
+    saab.fit(X, whichPCA='numpy')
     Xt = saab.transform(X)
     Y = saab.inverse_transform(Xt)
     print(np.mean(np.abs(X-Y)))

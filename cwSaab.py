@@ -1,4 +1,4 @@
-# 2020.05.15
+# 2020.05.29
 # A generalized version of channel wise Saab
 # Current code accepts <np.array> shape(..., D) as input
 #
@@ -68,15 +68,17 @@ class cwSaab():
         if SaabArg['num_AC_kernels'] != -1:
             S[-1] = SaabArg['num_AC_kernels']
         if train == True:
-            isInteger, bits, opType = False, 8, 'int32'
+            isInteger, bits, opType, whichPCA = False, 8, 'int32', 'numpy'
             if 'isInteger' in SaabArg.keys():
                 isInteger = SaabArg['isInteger']
             if 'bits' in SaabArg.keys():
                 bits = SaabArg['bits'] 
             if 'opType' in SaabArg.keys():
                 opType = SaabArg['opType'] 
+            if 'whichPCA' in SaabArg.keys():
+                whichPCA = SaabArg['opType'] 
             saab = Saab(num_kernels=SaabArg['num_AC_kernels'], useDC=SaabArg['useDC'], needBias=SaabArg['needBias'], isInteger=isInteger, bits=bits, opType=opType)
-            saab.fit(X)
+            saab.fit(X, whichPCA=whichPCA)
         transformed = saab.transform(X).reshape(S)
         return saab, transformed
 
