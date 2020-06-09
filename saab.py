@@ -33,13 +33,13 @@ class Saab():
         self.Kernels = np.round(self.Kernels * pow(2, self.bits)).astype(self.opType)
         self.Mean0 = np.round(self.Mean0 * pow(2, self.bits)).astype(self.opType)
         
-    def fit(self, X, whichPCA='numpy'): 
+    def fit(self, X, whichPCA='sklearn'): 
         assert (len(X.shape) == 2), "Input must be a 2D array!"
         X = X.astype('float32')
+        self.Bias = np.max(np.linalg.norm(X, axis=1)) * 1 / np.sqrt(X.shape[1])
         if self.useDC == True:
             X, dc = self.remove_mean(X.copy(), axis=1)
         X, self.Mean0 = self.remove_mean(X.copy(), axis=0)
-        self.Bias = np.max(np.linalg.norm(X, axis=1)) * 1 / np.sqrt(X.shape[1])
         if self.num_kernels == -1:
             self.num_kernels = X.shape[-1]
         pca = myPCA(n_components=self.num_kernels, isInteger=False)

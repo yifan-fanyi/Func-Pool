@@ -21,7 +21,8 @@ class myPCA():
         X = X - np.mean(X.copy(), axis=0)
         X_cov = np.cov(X, rowvar=0)
         eVal, eVect = np.linalg.eig(X_cov)
-        idx = np.argsort(eVal)[:self.n_components]
+        idx = np.argsort(eVal)[::-1]
+        idx = idx[:self.n_components]
         self.Kernels = np.transpose(eVect[:, idx])[::-1]
         self.Energy_ratio = eVal / np.sum(eVal)
         self.Energy_ratio = self.Energy_ratio[idx]
@@ -65,9 +66,10 @@ class myPCA():
 if __name__ == "__main__":
     import cv2
     X = cv2.imread('/Users/alex/Desktop/proj/compression/data/Kodak/kodim03.png')
-    p = myPCA(isInteger=1)
+    p = myPCA(n_components=2, isInteger=1)
     p.fit(X)
     print(p.Kernels)
+    print(p.Energy_ratio)
     Y = p.transform(X)
     Y = p.inverse_transform(Y)
     print(np.mean(np.abs(Y-X)))
@@ -75,6 +77,8 @@ if __name__ == "__main__":
 
     p.fit(X, whichPCA='sklearn')
     print(p.Kernels)
+    print(p.Energy_ratio)
+
     Y = p.transform(X)
     Y = p.inverse_transform(Y)
     print(np.mean(np.abs(Y-X)))
