@@ -23,7 +23,7 @@ class myPCA():
         eVal, eVect = np.linalg.eig(X_cov)
         idx = np.argsort(eVal)[::-1]
         idx = idx[:self.n_components]
-        self.Kernels = np.transpose(eVect[:, idx])[::-1]
+        self.Kernels = np.transpose(eVect[:, idx])
         self.Energy_ratio = eVal / np.sum(eVal)
         self.Energy_ratio = self.Energy_ratio[idx]
         self.Energy = eVal[idx]
