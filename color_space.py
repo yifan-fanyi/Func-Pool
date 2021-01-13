@@ -7,6 +7,7 @@ import cv2
 import os
 import copy
 from skimage.measure import block_reduce
+from myPCA import myPCA
 
 def YUV4202BGR(X):
     tmp = [ X[0], 
