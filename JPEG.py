@@ -1,26 +1,10 @@
 # 2020.04.25
 # dct based operation
 import numpy as np
-from scipy.fftpack import dct, idct
 from skimage.util import view_as_windows
 
-class DCT():
-    def __init__(self, N=8, P=8):
-        self.N = N
-        self.P = P
-    
-    def transform(self, a):
-        S = list(a.shape)
-        a = a.reshape(-1, self.N, self.P, 1)
-        a = dct(dct(a, axis=1, norm='ortho'), axis=2, norm='ortho')
-        return a.reshape(S)
+from transform import DCT
 
-    def inverse_transform(self, a):
-        S = list(a.shape)
-        a = a.reshape(-1, self.N, self.P, 1)
-        a = idct(idct(a, axis=1, norm='ortho'), axis=2, norm='ortho')
-        return a.reshape(S)
-        
 # zig zag scanning
 class ZigZag():
     def __init__(self, N=8):
@@ -72,63 +56,15 @@ def JPEG_Quant(X, N=50, deQ=False):
         X *= newQ.reshape(64)
     return np.round(X)
 
-# multi layer DCT 
-class mDCT():
-    def __init__(self, depth=0, concatArg={'func':lambda X, concatArg: X}, quantization=True, Q=90, zigzag=True):
-        self.depth = (int)(depth)
-        self.concatArg = concatArg
-        self.quantization = quantization
-        self.Q = Q
-        self.zigzag = zigzag
-        self.win = 8
-        self.dct = DCT(N=self.win, P=self.win)
-        self.ZigZag = ZigZag(N=self.win)
-    
-    def split_(self, i):
-        return i <= 10        
-    
-    def hop_i_(self, X):
-        output = []
-        for i in range(X.shape[-1]):
-            tmp = view_as_windows(X[:,:,:,i].reshape(X.shape[0], X.shape[1], X.shape[2], -1), (1,self.win,self.win,1), (1,self.win,self.win,1))
-            tmp = tmp.reshape(tmp.shape[0], tmp.shape[1], tmp.shape[2], -1)
-            tmp = self.dct.transform(tmp)
-            if self.quantization == True:
-                tmp = JPEG_Quant(tmp, N=self.Q, deQ=False)
-            if self.zigzag == True:
-                tmp = self.ZigZag.transform(tmp)
-            output.append(tmp)
-        return np.concatenate(output, axis=-1)
-    
-    def inv_hop_i_(self, X):
-        output = []
-        for i in range(0, X.shape[-1], self.win*self.win):
-            tmp = X[:,:,:,i:i+self.win*self.win].copy()
-            if self.zigzag == True:
-                tmp = self.ZigZag.inverse_transform(tmp)
-            if self.quantization == True:
-                tmp = JPEG_Quant(tmp, N=self.Q, deQ=True)
-            tmp = self.dct.inverse_transform(tmp)
-            tmp = tmp.reshape(tmp.shape[0], tmp.shape[1], tmp.shape[2], -1, 1, self.win, self.win, 1)
-            tmp = np.moveaxis(tmp, 5, 2)
-            tmp = np.moveaxis(tmp, 6, 4)
-            tmp = tmp.reshape(tmp.shape[0], tmp.shape[1]*tmp.shape[2], tmp.shape[3]*tmp.shape[4], -1)            
-            output.append(tmp)
-        return np.concatenate(output, axis=-1)
-    
-    def transform(self, X):
-        X = X.astype('float32')
-        X -= 128.
-        for i in range(self.depth):
-            X = self.hop_i_(X)
-        #output = self.concatArg['func'](output, self.concatArg)
-        return X
-    
-    def inverse_transform(self, X, invconcatArg={'func':lambda X, invconcatArg: X}):
-        #X = invconcatArg['func'](X, invconcatArg)
-        for i in range(self.depth):
-            X = self.inv_hop_i_(X)
-        return X+128.
+def JPEG(Xraw, N=50):
+    X = Shrink(Xraw-128, {'win':8})
+    tX = DCT(8,8).transform(X)
+    tX = JPEG_Quant(tX, N=N, deQ=False)
+    c, _ = zero_percent(tX)
+    tX = JPEG_Quant(tX, N=N, deQ=True)
+    iX = DCT(8,8).inverse_transform(tX)
+    iX = invShrink(iX+128, {'win':8})
+    return iX, c
 
 # use DCT and IDCT for interpolation 
 # input for Smooth_Interpolation: (?, initN, initN, 1)
