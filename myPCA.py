@@ -1,22 +1,66 @@
-# v2020.05.29
+# v2021.01.19
 import numpy as np 
 from sklearn.decomposition import PCA
 
 class myPCA():
-    def __init__(self, n_components=-1, isInteger=True, bits=12, opType='int64'):
-        self.trained = False
-        self.n_components = n_components
-        self.Kernels = []
-        self.PCA = None
-        self.Energy_ratio = []
-        self.Energy = []
-        self.bits = bits
-        self.isInteger = isInteger
-        self.opType = opType
-
-    def to_int_(self):
-        self.Kernels = np.round(self.Kernels * pow(2, self.bits)).astype(self.opType)
-
+    def __init__(self, n_components=-1, is2D=False, H=None, W=None):
+        self.is2D         = is2D
+        if is2D == False:
+            self.n_components = n_components
+            self.Kernels      = []
+            self.PCA          = None
+            self.Energy_ratio = []
+            self.Energy       = []
+        else:     
+            self.H            = H
+            self.W            = W
+            self.K1           = []
+            self.K2           = []
+    
+    def PCA_2D_fit(self, X):
+        S = X.shape
+        X = X.reshape(-1, self.W, self.H)
+        mean = np.zeros((self.W, self.H))
+        for i in range(X.shape[0]):
+            mean = mean + X[i]
+        mean /= float(X.shape[0])
+        cov_row = np.zeros((self.H, self.H))
+        for i in range(X.shape[0]):
+            diff = X[i] - mean
+            cov_row = cov_row + np.dot(diff.T, diff)
+        cov_row /= float(X.shape[0])
+        row_eval, row_evec = np.linalg.eig(cov_row)
+        sorted_index = np.argsort(row_eval)
+        self.K1 = row_evec[:,sorted_index[:-self.H-1 : -1]]
+        # m*m matrix
+        cov_col = np.zeros((self.W, self.W))
+        for i in range(X.shape[0]):
+            diff = X[i] - mean
+            cov_col += np.dot(diff,diff.T)
+        cov_col /= float(X.shape[0])
+        col_eval, col_evec = np.linalg.eig(cov_col)
+        sorted_index = np.argsort(col_eval)
+        self.K2 = col_evec[:,sorted_index[:-self.W-1 : -1]]
+        
+    def PCA_2D_transform(self, X, inv=False):
+        res = []
+        S = X.shape
+        X = X.reshape(-1, self.W, self.H)
+        for i in range(X.shape[0]):
+            if inv == False:
+                res.append(np.dot(self.K2.T, np.dot(X[i], self.K1)))
+            else:
+                res.append(np.dot(self.K2, np.dot(X[i], self.K1.T)))
+        res = np.concatenate(res, axis=0)
+        return res.reshape(S)
+    
+    def PCA_sklearn(self, X):
+        self.PCA          = PCA(  n_components=self.n_components  )
+        self.PCA.fit(X)
+        self.Kernels      = self.PCA.components_
+        self.Energy_ratio = self.PCA.explained_variance_ratio_
+        self.Energy       = self.PCA.explained_variance_
+        
     def PCA_numpy(self, X):
         X = X - np.mean(X.copy(), axis=0)
         X_cov = np.cov(X, rowvar=0)
@@ -27,41 +71,33 @@ class myPCA():
         self.Energy_ratio = eVal / np.sum(eVal)
         self.Energy_ratio = self.Energy_ratio[idx]
         self.Energy = eVal[idx]
-
-    def PCA_sklearn(self, X):
-        self.PCA = PCA(n_components=self.n_components)
-        self.PCA.fit(X)
-        self.Kernels = self.PCA.components_
-        self.Energy_ratio = self.PCA.explained_variance_ratio_
-        self.Energy = self.PCA.explained_variance_
         
-    def fit(self, X, whichPCA='numpy'):
-        S = X.shape
-        X = X.reshape(-1, X.shape[-1])
-        if self.n_components == -1:
-            self.n_components = X.shape[-1]
-        if whichPCA == 'numpy':
-            self.PCA_numpy(X)
-        elif whichPCA == 'sklearn':
-            self.PCA_sklearn(X)
+    def fit(self, X, whichPCA='sklearn'):
+        if self.is2D == True:
+            self.PCA_2D_fit(X)
         else:
-            assert (False), "whichPCA only support 'numpy' or 'sklearn'!"
-        if self.isInteger == True:
-            self.to_int_()
-        self.trained = True
+            X = X.reshape(  -1, X.shape[-1]  )
+            if self.n_components == -1:
+                self.n_components = X.shape[-1]
+            if whichPCA == 'sklearn':
+                self.PCA_sklearn(  X  )
+            elif whichPCA == 'numpy':
+                self.PCA_numpy(X)
+            else:
+                assert (False), "whichPCA only support 'numpy' or 'sklearn' when is2D==False!"
         return self
-
-    # transform retains mean
+            
     def transform(self, X):
-        assert (self.trained == True), "Must call fit first!"
-        return np.dot(X, np.transpose(self.Kernels))
+        if self.is2D == False:
+            return np.dot(  X, np.transpose(  self.Kernels  )  )
+        else:
+            return self.PCA_2D_transform(X, inv=False)
 
     def inverse_transform(self, X):
-        assert (self.trained == True), "Must call fit first!"
-        X = np.dot(X, self.Kernels)
-        if self.isInteger == True:
-            X = np.round(X / pow(2, 2 * self.bits)).astype(self.opType)
-        return X
+        if self.is2D == False:
+            return np.dot(  X, self.Kernels  )
+        else:
+            return self.PCA_2D_transform(X, inv=True)
 
 if __name__ == "__main__":
     import cv2
