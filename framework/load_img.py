@@ -5,53 +5,9 @@
 import numpy as np
 import cv2
 import os
-import copy
 from skimage.measure import block_reduce
-from myPCA import myPCA
 
-def YUV4202BGR(X):
-    tmp = [ X[0], 
-            cv2.resize(X[1], (X[0].shape[1], X[0].shape[2])),
-            cv2.resize(X[2], (X[0].shape[1], X[0].shape[2]))]
-    return YUV2BGR(tmp)
-
-def BGR2RGB(X):
-    R        = copy.deepcopy(X[:,:,2])
-    X[:,:,2] = X[:,:,0]
-    X[:,:,0] = R
-    return X
-
-def BGR2YUV(X):
-    X = BGR2RGB(X)
-    K = np.array([[   0.299,    0.587,    0.114],
-                  [-0.14713, -0.28886,    0.436],
-                  [   0.615, -0.51499, -0.10001]])
-    X = np.moveaxis(X, -1, 0)
-    S = X.shape
-    X = np.dot(K, X.reshape(3, -1))
-    X = X.reshape(S)
-    X = np.moveaxis(X, 0, -1)
-    return X
-
-def YUV2BGR(X):
-    K = np.array([[1,        0,  1.13983],
-                  [1, -0.39465, -0.58060],
-                  [1,  2.03211,        0]])
-    X = np.moveaxis(X, -1, 0)
-    S = X.shape
-    X = np.dot(K, X.reshape(3, -1))
-    X = np.moveaxis(X.reshape(S), 0, -1)
-    return BGR2RGB(X)
-
-def BGR2PQR(X):
-    pca = myPCA()
-    S = X.shape
-    X = X.reshape(-1, 3)
-    pca.fit(X)
-    return pca, pca.transform(X).reshape(S)
-
-def PQR2BGR(X, pca):
-    return pca.inverse_transform(X)
+from framework.core.color_space import YUV4202BGR, BGR2RGB, BGR2YUV, YUV2BGR, BGR2PQR, PQR2BGR, ML_inv_color
 
 def Load_YUV420_from_File(name):
     try: 
@@ -102,6 +58,3 @@ def Load_from_Folder(folder, color='PQR', ct=1):
         return Y
     elif color == 'YUV420':
         return Y, U, V
-
-    
-

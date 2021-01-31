@@ -1,7 +1,6 @@
 # @yifan
 # 2021.01.12
 #
-
 import numpy as np 
 from sklearn import cluster
 
@@ -36,3 +35,7 @@ class myKMeans():
         idx = idx.reshape(-1,)
         X = self.cent[idx]
         return X.reshape(S)
+
+
+
+        
