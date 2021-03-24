@@ -4,6 +4,8 @@
 #
 import numpy as np
 import copy
+import math
+from framework.dependency import *
 
 def write_to_txt(X, name='tmp.txt'):
     X = copy.deepcopy(X)
@@ -27,3 +29,24 @@ def n_zero(X, percent=True):
     else:
         zp = (X.shape[0]*X.shape[1]*X.shape[2]*X.shape[3]) - np.sum(tX)
     return zp
+
+def Distortion_model(x, a, b):
+    return a * np.power(x, b)
+
+def load_img(img, isYUV=False):
+    if isYUV == True:
+        pqr = Load_Images(['/Users/alex/Desktop/proj/compression/data/DIV2K/DIV2K/'+str(img)+'.bmp'],color='YUV')
+    else:
+        pca, pqr = Load_Images(['/Users/alex/Desktop/proj/compression/data/DIV2K/DIV2K/'+str(img)+'.bmp'],color='PQR')
+    Y = pqr[0][:,:,0].reshape(-1,pqr[0].shape[0],pqr[0].shape[1],1)[:, :1024, :1024 ]
+    return Y
+
+def load_img_Kodak(img, isYUV=False):
+    if isYUV == True:
+        pqr = Load_Images(['/Users/alex/Desktop/proj/compression/data/Kodak/Kodak/'+str(img)+'.bmp'],color='YUV')
+    else:
+        pca, pqr = Load_Images(['/Users/alex/Desktop/proj/compression/data/Kodak/Kodak/'+str(img)+'.bmp'],color='PQR')
+    Y = pqr[0][:,:,0].reshape(-1,pqr[0].shape[0],pqr[0].shape[1],1)
+    U = pqr[0][:,:,1].reshape(-1,pqr[0].shape[0],pqr[0].shape[1],1)
+    V = pqr[0][:,:,2].reshape(-1,pqr[0].shape[0],pqr[0].shape[1],1)
+    return Y, U, V

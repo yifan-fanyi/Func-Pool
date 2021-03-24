@@ -73,7 +73,3 @@ def BD_RATE(R1, PSNR1, R2, PSNR2, piecewise=0):
     avg_exp_diff = (int2-int1)/(max_int-min_int)
     avg_diff = (np.exp(avg_exp_diff)-1)*100
     return avg_diff
-
-def BD(ref_R1, ref_PSNR1, R2, PSNR2):
-    print('BD-PSNR: ', BD_PSNR(ref_R1, ref_PSNR1, R2, PSNR2))
-    print('BD-RATE: ', BD_RATE(ref_R1, ref_PSNR1, R2, PSNR2))

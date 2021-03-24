@@ -2,6 +2,7 @@
 # @yifan 
 #
 import numpy as np
+import copy
 
 from framework.core.myPCA import myPCA
 from framework.core.transform_utli import Shrink, invShrink
@@ -55,19 +56,20 @@ class BH_PCA():
             tPCA.append(pca)
         self.PCA_list.append(tPCA)
         self.Win_list.append(win)
+        return self
             
     def transform_single_hop(self, pX, hop):
         tXtmp = []
         for k in range(pX.shape[-1]):
-            tmp = Shrink(copy.deepcopy(pX[:,:,:,k:k+1]), win=self.Win_list[hop])
-            tmp = self.PCA_list[hop][k].transform(tmp)
+            tmp = Shrink(copy.deepcopy(pX[:,:,:,k:k+1]), win=self.Win_list[hop-1])
+            tmp = self.PCA_list[hop-1][k].transform(tmp)
             tXtmp.append(tmp)
         return np.concatenate(tXtmp, axis=-1)
     
     def inverse_transform_single_hop(self, pX, hop):
         iXtmp = []
-        for k in range(0, pX.shape[-1], self.Win_list[hop]**2):
-            iX = self.PCA_list[hop][k//self.Win_list[hop]**2].inverse_transform(pX[:,:,:,k:k+self.Win_list[hop]**2])
-            iX = invShrink(iX, win=self.Win_list[hop])
+        for k in range(0, pX.shape[-1], self.Win_list[hop-1]**2):
+            iX = self.PCA_list[hop-1][k//self.Win_list[hop-1]**2].inverse_transform(pX[:,:,:,k:k+self.Win_list[hop-1]**2])
+            iX = invShrink(iX, win=self.Win_list[hop-1])
             iXtmp.append(iX)
         return np.concatenate(iXtmp, axis=-1)

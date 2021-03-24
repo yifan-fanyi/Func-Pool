@@ -102,7 +102,7 @@ class myPCA():
             
     def transform(self, X):
         if self.is2D == False:
-            return np.dot(  X, np.transpose(  self.Kernels  )  )
+            return np.dot(  X, np.transpose(  self.Kernels[:X.shape[-1], :X.shape[-1]]  )  )
         else:
             return self.PCA_2D_transform(X, inv=False)
 
@@ -143,6 +143,6 @@ class myPCA():
         if self.is2D == False:
             if K is not None:
                 return np.dot(  X, K  )
-            return np.dot(  X, self.Kernels  )
+            return np.dot(  X, self.Kernels[:X.shape[-1], :X.shape[-1]]   )
         else:
             return self.PCA_2D_transform(X, inv=True)

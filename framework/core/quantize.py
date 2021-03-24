@@ -32,17 +32,17 @@ def Quant_Matrix(N, mode):
         newQ = 50. / N * new_Q.copy()
     return newQ
 
-def Q(tPCA, X, Qstep, mode):
-    if mode == 0:
+def Quantize(tPCA=None, X=None, Qstep=None, mode=1):
+    if mode == 0 or mode == 'our':
         _, Qmatrix = compute_quantization_matrix(tPCA.K1, tPCA.K2, Qstep, win=8)
         Qmatrix = Qmatrix.reshape(-1)
         return np.round(X/Qmatrix)
-    elif mode == 1:
+    elif mode == 1 or mode == 'const':
         return np.round(X/Qstep)
-    elif mode == 2:
+    elif mode == 2 or mode == 'JPEG':
         Qmatrix = Quant_Matrix(Qstep, 'JPEG')
         return np.round(X/Qmatrix)
-    elif mode == 3:
+    elif mode == 3 or mode == 'HVS':
         Qmatrix = Quant_Matrix(Qstep, 'HVS')
         return np.round(X/Qmatrix)
     elif mode == 'H':
@@ -53,17 +53,17 @@ def Q(tPCA, X, Qstep, mode):
     else:
         return X
     
-def dQ(tPCA, X, Qstep, mode):
-    if mode == 0:
+def dQuantize(tPCA=None, X=None, Qstep=None, mode=1):
+    if mode == 0 or mode == 'our':
         _, Qmatrix = compute_quantization_matrix(tPCA.K1, tPCA.K2, Qstep, win=8)
         Qmatrix = Qmatrix.reshape(-1)
         return np.round(X*Qmatrix)
-    elif mode == 1:
+    elif mode == 1 or mode == 'const':
         return np.round(X*Qstep)
-    elif mode == 2:
+    elif mode == 2 or mode == 'JPEG':
         Qmatrix = Quant_Matrix(Qstep, 'JPEG')
         return np.round(X*Qmatrix)
-    elif mode == 3:
+    elif mode == 3 or mode == 'HVS':
         Qmatrix = Quant_Matrix(Qstep, 'HVS')
         return np.round(X*Qmatrix)
     else:
