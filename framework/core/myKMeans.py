@@ -1,14 +1,22 @@
 # @yifan
-# 2021.01.12
+# 2021.04.23
 #
 import numpy as np 
+import sklearn
 from sklearn import cluster
+from framework.core.fast_kmeans import fast_KMeans
 
 class myKMeans():
-    def __init__(self, n_clusters=-1, trunc=-1):
-        self.KM          = cluster.KMeans(  n_clusters=n_clusters, n_init=11  )
-        self.cent        = []
+    def __init__(self, n_clusters=-1, trunc=-1, fast=True):
+        if fast == True:
+            self.KM          = fast_KMeans(  n_clusters=n_clusters, n_init=11  )
+            self.__version   = self.KM.__version__
+        else:
+            self.KM          = cluster.KMeans(  n_clusters=n_clusters, n_init=11  )
+            self.__version__ =  sklearn. __version__ 
+        self.cluster_centers_        = []
         self.trunc       = trunc
+        
 
     def truncate(self, X):
         if self.trunc != -1:
@@ -19,7 +27,7 @@ class myKMeans():
         X = X.reshape(  -1, X.shape[-1]  )
         self.truncate(X)
         self.KM.fit(  X  )
-        self.cent = np.array(  self.KM.cluster_centers_  )
+        self.cluster_centers_ = np.array(  self.KM.cluster_centers_  )
         return self
 
     def predict(self, X):
@@ -33,7 +41,7 @@ class myKMeans():
         S = (list)(idx.shape)
         S[-1] = -1
         idx = idx.reshape(-1,)
-        X = self.cent[idx]
+        X = self.cluster_centers_[idx]
         return X.reshape(S)
 
 
