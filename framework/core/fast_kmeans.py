@@ -32,11 +32,11 @@ class fast_KMeans:
                                     niter=self.max_iter,
                                     nredo=self.n_init,
                                     )
-        X = np.ascontiguousarray(X)
+        X = np.ascontiguousarray(X.astype('float32'))
         self.kmeans.train(X)
         self.cluster_centers_ = self.kmeans.centroids
         self.inertia_ = self.kmeans.obj[-1]
 
     def predict(self, X):
-        X = np.ascontiguousarray(X)
+        X = np.ascontiguousarray(X.astype('float32'))
         return self.kmeans.index.search(X.astype(np.float32), 1)[1]
