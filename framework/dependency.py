@@ -31,6 +31,7 @@ from framework.core.evaluate import MSE, PSNR, BD, SSIM, MS_SSIM
 
 # others
 from framework.core.myKMeans import myKMeans
+from framework.core.fast_kmeans import fast_KMeans
 from framework.core.mylearner import myLearner
 from framework.core.llsr import LLSR
 

@@ -8,14 +8,15 @@ import faiss
 import numpy as np
 
 class fast_KMeans:
-    def __init__(self, n_clusters=8, n_init=10, max_iter=300, gpu=False):
+    def __init__(self, n_clusters=8, n_init=10, max_iter=300, gpu=False, n_threads=10):
         self.n_clusters = n_clusters
         self.n_init = n_init
         self.max_iter = max_iter
         self.kmeans = None
         self.cluster_centers_ = None
         self.inertia_ = None
-        self.gpu = gpu            
+        self.gpu = gpu     
+        faiss.omp_set_num_threads(n_threads)       
         self.__version__ = faiss.__version__
 
     def fit(self, X):
@@ -36,7 +37,11 @@ class fast_KMeans:
         self.kmeans.train(X)
         self.cluster_centers_ = self.kmeans.centroids
         self.inertia_ = self.kmeans.obj[-1]
-
+        return self
+        
     def predict(self, X):
         X = np.ascontiguousarray(X.astype('float32'))
         return self.kmeans.index.search(X.astype(np.float32), 1)[1]
+    
+    def inv_predict(self, label):
+        return self.cluster_centers[label]
