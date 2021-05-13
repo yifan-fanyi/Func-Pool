@@ -1,4 +1,5 @@
-# 2021.04.23
+# 2021.05.10
+# change inv_predict to inverse_perdict
 # https://www.kdnuggets.com/2021/01/k-means-faster-lower-error-scikit-learn.html
 # faster kmeans
 # gpu is supported
@@ -43,5 +44,5 @@ class fast_KMeans:
         X = np.ascontiguousarray(X.astype('float32'))
         return self.kmeans.index.search(X.astype(np.float32), 1)[1]
     
-    def inv_predict(self, label):
+    def inverse_predict(self, label):
         return self.cluster_centers[label]

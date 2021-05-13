@@ -1,5 +1,5 @@
-# 2020.03.18
-#
+# 2020.05.10
+#  update topNscore
 # learner on subspace
 # particular designed for encounter missing class in this subspace
 # if one class do not exists in training data, probability for this class would be zeros under anytime
@@ -73,6 +73,16 @@ class myLearner():
         assert (self.trained == True), "Must call fit first!"
         return accuracy_score(Y, self.predict(X)) 
 
+    def topNscore(self, X, Y, N=3):
+        prob = self.predict_proba(X)
+        idx = np.argsort(prob, axis=1)
+        ct = 0.
+        Y = Y.astype('int16')
+        for i in range(len(Y)):
+            if Y[i] in (list)(idx[i, -N:]):
+                ct+=1
+        return ct/(float)(len(Y))
+
 if __name__ == "__main__":
     from sklearn.svm import SVC
     from sklearn import datasets
@@ -88,4 +98,5 @@ if __name__ == "__main__":
     clf.fit(X_train, y_train)
     print(" --> train acc: %s"%str(clf.score(X_train, y_train)))
     print(" --> test acc.: %s"%str(clf.score(X_test, y_test)))
+    print(" --> test top3 acc.: %s"%str(clf.topNscore(X_test, y_test, 3)))
     print("------- DONE -------\n")

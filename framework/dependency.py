@@ -1,4 +1,4 @@
-# 2021.01.27
+# 2021.05.12
 # @yifan 
 #
 import os
@@ -34,10 +34,11 @@ from framework.core.myKMeans import myKMeans
 from framework.core.fast_kmeans import fast_KMeans
 from framework.core.mylearner import myLearner
 from framework.core.llsr import LLSR
+from framework.core.xgbc import XGBC
 
 # entropy coding
 from framework.core.huffman import Huffman
-
+from framework.core.MPM import MPM, ML_MPM, ML_MPM3, ML_MPMa
 # math
 from framework.core.func import random_Cauchy, Cauchy, Laplacian, Exp
 from framework.core.io import bits2int, int2bits
