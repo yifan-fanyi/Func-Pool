@@ -12,7 +12,7 @@ class XGBC():
         self.param = { 'eta': 0.3, 
                        'max_depth': max_depth,  
                        'objective': 'multi:softprob',  
-                       'num_class': 3} 
+                       'num_class': num_class} 
         self.param.update(param)
         self.learner = None
         

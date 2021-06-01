@@ -13,7 +13,7 @@ def int2bits(integer, lenth, is_uint, return_string=False):
         tmp = bin(integer)[2:].zfill(lenth)
     else:
         print('ERROR')
-        exit()        
+        assert False, "Dymanic range not correct!"        
     bools = []
     if return_string == True:
         return tmp

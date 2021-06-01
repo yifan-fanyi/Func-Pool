@@ -1,9 +1,11 @@
-# 2020.04.02
+# 2021.04.21
 # @yifan
 # MS-SSIM, ref: http://places.csail.mit.edu/deepscene/small-projects/TRN-pytorch-pose/model_zoo/models/compression/msssim.py
 
 import numpy as np
 from skimage.metrics import structural_similarity
+from scipy import signal
+from scipy.signal import *
 
 def SSIM(ref, X, multichannel=True):
   if len(X.shape) == 4:
@@ -29,7 +31,7 @@ def _FSpecialGauss(size, sigma):
   g = np.exp(-((x**2 + y**2)/(2.0 * sigma**2)))
   return g / g.sum()
 
-def _SSIMForMultiScale(img1, img2, max_val=255, filter_size=11,
+def _SSIMForMultiScale(img1, img2, max_val=255, filter_size=23,
                        filter_sigma=1.5, k1=0.01, k2=0.03):
   """Return the Structural Similarity Map between `img1` and `img2`.
 
@@ -104,7 +106,7 @@ def _SSIMForMultiScale(img1, img2, max_val=255, filter_size=11,
   cs = np.mean(v1 / v2)
   return ssim, cs
 
-def MultiScaleSSIM(img1, img2, max_val=255, filter_size=11, filter_sigma=1.5,
+def MultiScaleSSIM(img1, img2, max_val=255, filter_size=23, filter_sigma=1.5,
                    k1=0.01, k2=0.03, weights=None):
   """Return the MS-SSIM score between `img1` and `img2`.
 
@@ -159,7 +161,7 @@ def MultiScaleSSIM(img1, img2, max_val=255, filter_size=11, filter_sigma=1.5,
         filter_sigma=filter_sigma, k1=k1, k2=k2)
     mssim = np.append(mssim, ssim)
     mcs = np.append(mcs, cs)
-    filtered = [convolve(im, downsample_filter, mode='reflect')
+    filtered = [convolve(im, downsample_filter, mode='same')
                 for im in [im1, im2]]
     im1, im2 = [x[:, ::2, ::2, :] for x in filtered]
   return (np.prod(mcs[0:levels-1] ** weights[0:levels-1]) * (mssim[levels-1] ** weights[levels-1]))
