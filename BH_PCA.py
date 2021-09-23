@@ -4,8 +4,8 @@
 import numpy as np
 import copy
 
-from framework.core.myPCA import myPCA
-from framework.core.transform_utli import Shrink, invShrink
+from myPCA import myPCA
+from util import Shrink, invShrink
 
 class BH_PCA():
     def __init__(self, depth):

@@ -7,8 +7,8 @@
 # based on statics, we got the probability 
 import numpy as np
 import copy
-from framework.core.io import bits2int, int2bits
-from framework.core.mylearner import myLearner
+from io import bits2int, int2bits
+from mylearner import myLearner
 
 # encode uses idx with shape (H, W)
 # if index in MPM_list, send the index in MPM_list

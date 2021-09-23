@@ -3,7 +3,7 @@
 # 
 import numpy as np
 
-from framework.core.myHVS_Q import compute_quantization_matrix
+from myHVS_Q import compute_quantization_matrix
 
 def Quant_Matrix(N, mode):
     JPEG_Q = np.array([16, 11, 10, 16, 24, 40, 51, 61,

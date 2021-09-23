@@ -7,7 +7,7 @@ import cv2
 import os
 from skimage.measure import block_reduce
 
-from framework.core.color_space import BGR2RGB, BGR2YUV, YUV2BGR, BGR2PQR, PQR2BGR, ML_inv_color
+from color_space import BGR2RGB, BGR2YUV, YUV2BGR, BGR2PQR, PQR2BGR, ML_inv_color
 
 def Load_from_Folder(folder, color='PQR', ct=1):
     name = os.listdir(folder)

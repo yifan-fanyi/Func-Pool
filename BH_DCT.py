@@ -4,8 +4,8 @@
 import numpy as np
 import copy
 
-from framework.core.dct import DCT
-from framework.core.transform_utli import Shrink, invShrink
+from dct import DCT
+from util import Shrink, invShrink
 
 class BH_DCT():
     def __init__(self, depth=5):

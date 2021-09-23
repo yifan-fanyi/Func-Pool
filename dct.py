@@ -4,7 +4,7 @@
 import numpy as np
 from scipy.fftpack import dct, idct
 
-from framework.core.llsr import LLSR
+from llsr import LLSR
 
 class DCT():
     def __init__(self, N=8, P=8):

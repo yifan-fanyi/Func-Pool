@@ -51,4 +51,4 @@ class Huffman():
         if ct < size:
             dX.append((int)(self.inv_dict[stream[last:]]))
             last = len(stream)
-        return dX, last
+        return np.array(dX), last

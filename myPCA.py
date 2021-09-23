@@ -7,7 +7,6 @@
 import numpy as np
 import sklearn
 from sklearn.decomposition import PCA
-from scipy.linalg import orth
 
 class myPCA():
     def __init__(self, n_components=-1, is2D=False, H=None, W=None):
@@ -77,17 +76,6 @@ class myPCA():
         self.Energy_ratio = self.PCA.explained_variance_ratio_
         self.Energy       = self.PCA.explained_variance_
         
-    def PCA_numpy(self, X):
-        X = X - np.mean(X.copy(), axis=0)
-        X_cov = np.cov(X, rowvar=0)
-        eVal, eVect = np.linalg.eig(X_cov)
-        idx = np.argsort(eVal)[::-1]
-        idx = idx[:self.n_components]
-        self.Kernels = np.transpose(eVect[:, idx])
-        self.Energy_ratio = eVal / np.sum(eVal)
-        self.Energy_ratio = self.Energy_ratio[idx]
-        self.Energy = eVal[idx]
-        
     def fit(self, X, whichPCA='sklearn'):
         if self.is2D == True:
             self.PCA_2D_fit(X)
@@ -97,15 +85,17 @@ class myPCA():
                 self.n_components = X.shape[-1]
             if whichPCA == 'sklearn':
                 self.PCA_sklearn(  X  )
-            elif whichPCA == 'numpy':
-                self.PCA_numpy(X)
             else:
-                assert (False), "whichPCA only support 'numpy' or 'sklearn' when is2D==False!"
+                assert (False), "whichPCA only support 'sklearn' when is2D==False!"
         return self
             
     def transform(self, X):
         if self.is2D == False:
-            return np.dot(  X, np.transpose(  orth(self.Kernels[:X.shape[-1], :X.shape[-1]]  ))  )
+            S = (list)(X.shape)
+            S[-1] = -1
+            X = X.reshape(  -1, X.shape[-1]  )
+            tX = self.PCA.transform(X)
+            return tX.reshape(S)
         else:
             return self.PCA_2D_transform(X, inv=False)
 
@@ -142,10 +132,13 @@ class myPCA():
             tmpX_p = np.matmul(tmpX, weight2)
             return tmpX_p.reshape(S)
 
-    def inverse_transform(self, X, K=None):
+    def inverse_transform(self, X):
         if self.is2D == False:
-            if K is not None:
-                return np.dot(  X, K  )
-            return np.dot(  X, orth(self.Kernels[:X.shape[-1], :X.shape[-1]] )  )
+            S = (list)(X.shape)
+            S[-1] = -1
+            X = X.reshape(  -1, X.shape[-1]  )
+            tX = self.PCA.inverse_transform(X)
+            tX = tX.reshape(S)
+            return tX
         else:
             return self.PCA_2D_transform(X, inv=True)

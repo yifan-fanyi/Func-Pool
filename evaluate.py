@@ -2,11 +2,21 @@
 # @yifan
 
 import numpy as np
+import time
 from skimage.metrics import mean_squared_error, peak_signal_noise_ratio
 
-from framework.core.bd_rate import BD_PSNR, BD_RATE
-from framework.core.ssim import structural_similarity, MultiScaleSSIM
+from bd_rate import BD_PSNR, BD_RATE
+from ssim import structural_similarity, MultiScaleSSIM
 
+def Time(method):
+    def timed(*args, **kw):
+        ts = time.time()
+        result = method(*args, **kw)
+        te = time.time()
+        print("   <RunTime> %s: %4.1f s"%(method.__name__, (te - ts)))
+        return result
+    return timed
+    
 def MSE(ref, X):
     return mean_squared_error(ref, X)
 

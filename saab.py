@@ -7,6 +7,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 
 from myPCA import myPCA
+
 class Saab():
     def __init__(self, num_kernels=-1, useDC=True, needBias=True, isInteger=False, bits=8, opType='int64'):
         self.par = None

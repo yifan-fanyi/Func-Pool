@@ -8,8 +8,8 @@ import cv2
 from sklearn.preprocessing import normalize
 from skimage.measure import block_reduce
 
-from framework.core.myPCA import myPCA
-from framework.core.llsr import LLSR
+from myPCA import myPCA
+from LLSR import LLSR
 
 def Clip(X):
     tmp = copy.deepcopy(X)
@@ -18,7 +18,7 @@ def Clip(X):
     tmp[tmp < 0] = 0
     return tmp
     
-def BGR2PQR(X, doClip=True, doRescale=True):
+def BGR2PQR(X, doClip=True, doRescale=False):
     def reScale(K):
         K[:1] = normalize(K[:1], norm='l1')
         K[0] *= 219/255
@@ -53,8 +53,8 @@ def BGR2PQR(X, doClip=True, doRescale=True):
 def PQR2BGR(X, pca, doClip=False):
     X -= pca[1]
     if doClip == True:
-        return Clip(pca[0].inverse_transform(X, K=np.linalg.inv(pca[0].Kernels)))
-    return pca[0].inverse_transform(X, K=np.linalg.inv(pca[0].Kernels))
+        return Clip(pca[0].inverse_transform(X))
+    return pca[0].inverse_transform(X)
 
 def BGR2RGB(X):
     R        = copy.deepcopy(X[:,:,2:])
