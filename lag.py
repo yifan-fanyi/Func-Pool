@@ -7,7 +7,7 @@ from sklearn.metrics.pairwise import euclidean_distances
 
 class LAG():
     def __init__(self, learner, encode='onehot', num_clusters=[10,10], alpha=5, par={}):
-        assert (str(learner.__class__) == "<class 'llsr.LLSR'>"), "Currently only support <class 'llsr.LLSR'>!"
+        assert (str(learner.__class__) == "<class 'LLSR.LLSR'>"), "Currently only support <class 'LLSR.LLSR'>!"
         self.learner = learner
         self.encode = encode 
         self.num_clusters = num_clusters 
@@ -106,7 +106,7 @@ class LAG():
 if __name__ == "__main__":
     from sklearn import datasets
     from sklearn.model_selection import train_test_split
-    from llsr import LLSR as myLLSR
+    from LLSR import LLSR as myLLSR
 
     print(" > This is a test example: ")
     digits = datasets.load_digits()

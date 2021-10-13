@@ -5,10 +5,11 @@
 #
 import numpy as np
 from sklearn import cluster
+import copy
 from skimage.metrics import mean_squared_error
 from sklearn.metrics.pairwise import euclidean_distances
-
-from cwVQ_utli import *
+from myPCA import myPCA
+from util import *
 
 def check_mse(X, km, PSNR_TH):
     mse_TH = 255**2 / pow(10, PSNR_TH / 10)
@@ -166,8 +167,8 @@ class kmVQ4D(kmVQ):
 
 if __name__ == "__main__":
     import time
-    from framework.evaluate import *
-
+    from evaluate import *
+    import cv2
     X = cv2.imread("/Users/alex/Desktop/proj/compression/data/Kodak/kodim01.png", 0)
     X = X.reshape(1, X.shape[0], X.shape[1], 1)
     t0 = time.time()

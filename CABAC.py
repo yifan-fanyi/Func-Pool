@@ -61,6 +61,9 @@ class CABAC():
 if __name__ == "__main__":
     import time
     import numpy as np
+    import os
+    if os.path.isfile('./cahce') == False:
+        os.system("mkdir cache")
     a = np.random.randint(2, size=(10000)).tolist() +np.ones(10000).astype('int16').tolist() 
 
     CABAC.write(a, 'cache/tmp.txt')

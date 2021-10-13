@@ -1,5 +1,6 @@
 .DS_Store
-
+*.pyc
+cache
 # cmake 
 CMakeLists.txt.user
 CMakeCache.txt

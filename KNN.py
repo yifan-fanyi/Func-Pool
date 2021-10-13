@@ -5,7 +5,7 @@ class KNN():
     def __init__(self, k, distance_function):
         self.k = k
         self.distance_function = distance_function
-        self.__version__ "2021.07.04"
+        self.__version__ = "2021.07.04"
         
     def get_k_neighbors(self, point):
         dist = []

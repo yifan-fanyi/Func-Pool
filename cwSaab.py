@@ -1,4 +1,4 @@
-# 2020.05.29
+# 2021.10.06
 # A generalized version of channel wise Saab
 # Current code accepts <np.array> shape(..., D) as input
 #
@@ -10,17 +10,23 @@ from sklearn.decomposition import PCA
 from saab import Saab
 
 class cwSaab():
-    def __init__(self, depth=1, energyTH=0.01, SaabArgs=None, shrinkArgs=None, concatArg=None, splitMode=2, cwHop1=False):
+    def __init__(self, depth, 
+                       energyTH, 
+                       SaabArgs, 
+                       shrinkArgs, 
+                       inv_shrinkArgs, 
+                       concatArg, 
+                       inv_concatArg, 
+                       splitMode=2, 
+                       cwHop1=False):
         self.par = {}
-        assert (depth > 0), "'depth' must > 0!"
         self.depth = (int)(depth)
         self.energyTH = energyTH
-        assert (SaabArgs != None), "Need parameter 'SaabArgs'!"
         self.SaabArgs = SaabArgs
-        assert (shrinkArgs != None), "Need parameter 'shrinkArgs'!"
         self.shrinkArgs = shrinkArgs
-        assert (concatArg != None), "Need parameter 'concatArg'!"
+        self.inv_shrinkArgs = inv_shrinkArgs
         self.concatArg = concatArg
+        self.inv_concatArg = inv_concatArg
         self.Energy = []
         self.splitidx = []
         self.trained = False
@@ -68,17 +74,11 @@ class cwSaab():
         if SaabArg['num_AC_kernels'] != -1:
             S[-1] = SaabArg['num_AC_kernels']
         if train == True:
-            isInteger, bits, opType, whichPCA = False, 8, 'int32', 'numpy'
-            if 'isInteger' in SaabArg.keys():
-                isInteger = SaabArg['isInteger']
-            if 'bits' in SaabArg.keys():
-                bits = SaabArg['bits'] 
-            if 'opType' in SaabArg.keys():
-                opType = SaabArg['opType'] 
-            if 'whichPCA' in SaabArg.keys():
-                whichPCA = SaabArg['opType'] 
-            saab = Saab(num_kernels=SaabArg['num_AC_kernels'], useDC=SaabArg['useDC'], needBias=SaabArg['needBias'], isInteger=isInteger, bits=bits, opType=opType)
-            saab.fit(X, whichPCA=whichPCA)
+            isInteger, bits, opType, whichPCA = False, 8, 'int32', 'sklearn'
+            saab = Saab(num_kernels=SaabArg['num_AC_kernels'], 
+                        useDC=SaabArg['useDC'], 
+                        needBias=SaabArg['needBias'])
+            saab.fit(X)
         transformed = saab.transform(X).reshape(S)
         return saab, transformed
 
@@ -206,10 +206,9 @@ class cwSaab():
         X = inv_shrinkArg['func'](X, inv_shrinkArg)
         return X
 
-    def inverse_transform(self, X, inv_concatArg, inv_shrinkArgs):
+    def inverse_transform(self, X):
         assert (self.trained == True), "Must call fit first!"
-        assert ('func' in inv_concatArg.keys()), "'inv_concatArg' must contain key 'func'!"
-        X = inv_concatArg['func'](X, inv_concatArg)
+        X = self.inv_concatArg['func'](X, self.inv_concatArg)
         tmp = np.moveaxis(X[self.depth-1], -1, 0)
         for i in range(self.depth-1, -1, -1):
             res, ct = [], 0
@@ -217,7 +216,7 @@ class cwSaab():
                 num_kernel = self.par['Layer'+str(i)][j].Energy.shape[0]
                 res.append(self.inv_SaabTransform(np.moveaxis(tmp[ct:ct+num_kernel], 0, -1), 
                                                   saab=self.par['Layer'+str(i)][j],  
-                                                  inv_shrinkArg=inv_shrinkArgs[i]))
+                                                  inv_shrinkArg=self.inv_shrinkArgs[i]))
                 ct += num_kernel
             res = np.concatenate(res, axis=-1)  
             if i > 0:
@@ -236,18 +235,7 @@ if __name__ == "__main__":
     from skimage.util import view_as_windows
 
     # example callback function for collecting patches and its inverse
-    def Shrink(X, shrinkArg):
-        win = shrinkArg['win']
-        X = view_as_windows(X, (1,win,win,1), (1,win,win,1))
-        return X.reshape(X.shape[0], X.shape[1], X.shape[2], -1)
-
-    def invShrink(X, invshrinkArg):
-        win = invshrinkArg['win']
-        S = X.shape
-        X = X.reshape(S[0], S[1], S[2], -1, 1, win, win, 1)
-        X = np.moveaxis(X, 5, 2)
-        X = np.moveaxis(X, 6, 4)
-        return X.reshape(S[0], win*S[1], win*S[2], -1)
+    from util import Shrink, invShrink
 
     # example callback function for how to concate features from different hops
     def Concat(X, concatArg):
@@ -257,7 +245,7 @@ if __name__ == "__main__":
     import cv2
     print(" > This is a test example: ")
     digits = datasets.load_digits()
-    X = digits.images.reshape((len(digits.images), 8, 8, 1))
+    X = digits.images.reshape((len(digits.images), 8, 8, 1)).astype('float32')
     print(" input feature shape: %s"%str(X.shape))
 
     # set args
@@ -274,17 +262,17 @@ if __name__ == "__main__":
 
     print(" --> test inv")
     print(" -----> depth=1")
-    cwsaab = cwSaab(depth=1, energyTH=0.1, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg)
+    cwsaab = cwSaab(depth=1, energyTH=0.1, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg, inv_concatArg=inv_concatArg, inv_shrinkArgs=inv_shrinkArgs)
     output = cwsaab.fit(X)
     output = cwsaab.transform(X)
-    Y = cwsaab.inverse_transform(output, inv_concatArg=inv_concatArg, inv_shrinkArgs=inv_shrinkArgs)
+    Y = cwsaab.inverse_transform(output)
     Y = np.round(Y)
     assert (np.mean(np.abs(X-Y)) < 1e-5), "invcwSaab error!"
     print(" -----> depth=2")
-    cwsaab = cwSaab(depth=2, energyTH=0.5, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg, splitMode=0, cwHop1=True)
+    cwsaab = cwSaab(depth=2, energyTH=0.5, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg=concatArg, splitMode=0, cwHop1=True, inv_concatArg=inv_concatArg, inv_shrinkArgs=inv_shrinkArgs)
     output = cwsaab.fit(X)
     output = cwsaab.transform(X)
-    Y = cwsaab.inverse_transform(output, inv_concatArg=inv_concatArg, inv_shrinkArgs=inv_shrinkArgs)
+    Y = cwsaab.inverse_transform(output)
     Y = np.round(Y)
     assert (np.mean(np.abs(X-Y)) < 1), "invcwSaab error!"
     print(output[0].shape, output[1].shape)

@@ -3,7 +3,7 @@
 #
 
 import numpy as np 
-from utli import Shrink, invShrink
+from util import Shrink, invShrink
 from myPCA import myPCA
 from myKMeans import myKMeans
 

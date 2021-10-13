@@ -67,9 +67,12 @@ def sort_by_eng(Cent):
     return mp, imp
 
 class Mapping():
-    def __init__(self, Cent):
-        self.map, self.inv_map = sort_by_eng(Cent)
-        self.version = '2021.05.14'
+    def __init__(self, Cent=None, mp=None, imp=None):
+        if mp is None:
+            self.map, self.inv_map = sort_by_eng(Cent)
+        else:
+            self.map, self.inv_map = mp, imp
+        self.version = '2021.10.13'
 
     def transform(self, label):
         S = label.shape
@@ -86,7 +89,7 @@ class Mapping():
         return label.reshape(S)
 
 class myKMeans():
-    def __init__(self, n_clusters=-1, trunc=-1, fast=True, gpu=False, n_threads=10, sort=False, saveObj=False):
+    def __init__(self, n_clusters=-1, trunc=-1, fast=True, gpu=False, n_threads=10, sort=True, saveObj=False):
         if fast == True:
             self.KM          = fast_KMeans(  n_clusters=n_clusters, n_init=11 , gpu=gpu, n_threads=n_threads)
             self.version_   = self.KM.__version__
@@ -110,7 +113,7 @@ class myKMeans():
         self.truncate(X)
         self.KM.fit(  X  )
         if self.sort == True:
-            self.MP = Mapping(np.array(  self.KM.cluster_centers_  ))
+            self.MP = Mapping(Cent=np.array(  self.KM.cluster_centers_  ))
         self.cluster_centers_ = copy.deepcopy(np.array(  self.KM.cluster_centers_  ))
         if self.saveObj == False:
             self.KM = None

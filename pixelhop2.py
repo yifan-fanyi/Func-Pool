@@ -4,7 +4,7 @@ from cwSaab import cwSaab
 
 class Pixelhop2(cwSaab):
     def __init__(self, depth=1, TH1=0.01, TH2=0.001, SaabArgs=None, shrinkArgs=None, concatArg=None, splitMode=2):
-        super().__init__(depth=depth, energyTH=TH1, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg={'func':lambda X, concatArg: X}, splitMode=splitMode)
+        super().__init__(depth=depth, energyTH=TH1, SaabArgs=SaabArgs, shrinkArgs=shrinkArgs, concatArg={'func':lambda X, concatArg: X}, splitMode=splitMode, inv_concatArg=None, inv_shrinkArgs=None)
         self.TH1 = TH1
         self.TH2 = TH2
         self.concatArg = concatArg

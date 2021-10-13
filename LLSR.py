@@ -2,6 +2,7 @@
 # @yifan
 #
 import numpy as np
+from sklearn.metrics import accuracy_score
 
 class LLSR():
     def __init__(self, onehot=True, normalize=False):

@@ -7,7 +7,7 @@
 # based on statics, we got the probability 
 import numpy as np
 import copy
-from io import bits2int, int2bits
+from myIO import bits2int, int2bits
 from mylearner import myLearner
 
 # encode uses idx with shape (H, W)

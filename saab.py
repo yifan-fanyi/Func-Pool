@@ -1,5 +1,5 @@
-# v2020.05.29
-
+# 2021.10.06
+#
 # Saab transformation
 # modeiled from https://github.com/davidsonic/Interpretable_CNN
 
@@ -9,7 +9,7 @@ from sklearn.decomposition import PCA
 from myPCA import myPCA
 
 class Saab():
-    def __init__(self, num_kernels=-1, useDC=True, needBias=True, isInteger=False, bits=8, opType='int64'):
+    def __init__(self, num_kernels=-1, useDC=True, needBias=True):
         self.par = None
         self.Kernels = []
         self.Bias = []
@@ -19,21 +19,12 @@ class Saab():
         self.useDC = useDC
         self.needBias = needBias
         self.trained = False
-        self.bits = bits
-        self.isInteger = isInteger
-        self.opType = opType
 
     def remove_mean(self, X, axis):
         feature_mean = np.mean(X, axis=axis, keepdims=True)
         X = X - feature_mean
         return X, feature_mean
     
-    def to_int_(self):
-        assert (self.useDC == False), "Integer transformation is only supported when 'useDC=False'!"
-        self.Bias = np.round(self.Bias * pow(2, self.bits)+1).astype(self.opType)
-        self.Kernels = np.round(self.Kernels * pow(2, self.bits)).astype(self.opType)
-        self.Mean0 = np.round(self.Mean0 * pow(2, self.bits)).astype(self.opType)
-        
     def fit(self, X, whichPCA='sklearn'): 
         assert (len(X.shape) == 2), "Input must be a 2D array!"
         X = X.astype('float32')
@@ -43,7 +34,7 @@ class Saab():
         X, self.Mean0 = self.remove_mean(X.copy(), axis=0)
         if self.num_kernels == -1:
             self.num_kernels = X.shape[-1]
-        pca = myPCA(n_components=self.num_kernels, isInteger=False)
+        pca = myPCA(n_components=self.num_kernels)
         pca.fit(X, whichPCA=whichPCA)
         kernels = pca.Kernels
         energy = pca.Energy_ratio
@@ -54,8 +45,6 @@ class Saab():
             energy = np.concatenate((np.array([largest_ev]), pca.Energy[:-1]), axis=0)
             energy = energy / np.sum(energy)
         self.Kernels, self.Energy = kernels, energy
-        if self.isInteger == True:
-            self.to_int_()
         self.trained = True
         return self
         
@@ -69,8 +58,6 @@ class Saab():
         X = np.matmul(X, np.transpose(self.Kernels))
         if self.needBias == True and self.useDC == True:
             X[:, 0] -= self.Bias
-        if self.isInteger == True:
-            X = X.astype(self.opType)
         return X
     
     def inverse_transform(self, X):
@@ -85,8 +72,6 @@ class Saab():
             X -= self.Bias 
         if self.useDC == True:
             X += self.Mean0
-        if self.isInteger == True:
-            X = np.round(X / pow(2, 2 * self.bits)).astype(self.opType)
         return X
 
 if __name__ == "__main__":
@@ -130,10 +115,10 @@ if __name__ == "__main__":
     Xt = saab.transform(X)
     Y = saab.inverse_transform(Xt)
     assert (np.mean(np.abs(X-Y)) < 1e-5), "invSaab error!"
-    print(" -----> num_kernels=-1, needBias=True, useDC=False, isInteger=True")
+    print(" -----> num_kernels=-1, needBias=True, useDC=False")
     X = data.copy()
     X = X.reshape(X.shape[0], -1)[0:100]
-    saab = Saab(num_kernels=-1, useDC=False, needBias=False, isInteger=True, bits=16)
+    saab = Saab(num_kernels=-1, useDC=False, needBias=False)
     saab.fit(X)
     Xt = saab.transform(X)
     Y = saab.inverse_transform(Xt)

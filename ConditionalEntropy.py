@@ -25,7 +25,7 @@ class ConditionalEntropy():
         for i in range(len(idx)):
             mp[i] = idx[i]
             inv_mp[idx[i]] = i
-        return Mapping(mp, inv_mp)
+        return Mapping(Cent=None, mp=mp, imp=inv_mp)
     
     def get_map1(self, idx):
         l = len(np.unique(idx))
@@ -34,7 +34,7 @@ class ConditionalEntropy():
         for i in range(l):
             mp[i] = (int)(i / iv)
             inv_mp[(int)(i / iv)] = i
-        return Mapping(mp, inv_mp)
+        return Mapping(Cent=None, mp=mp, imp=inv_mp)
 
     def sort_map(self, idx):
         tmp = {}
@@ -105,6 +105,7 @@ class ConditionalEntropy():
 
 
 if __name__ == "__main__":
+    from scipy.stats import entropy
     idx = np.random.poisson(4, size=(10000))
     hist = np.zeros(len(np.unique(idx)))
     for i in range(len(idx)):
@@ -118,7 +119,7 @@ if __name__ == "__main__":
     stream = hf.encode(idx)
     print('Huffman avg =', len(stream)/(idx.shape[0]))
 
-    ce = ConditionalEntropy(6, None)
+    ce = ConditionalEntropy(2, None)
     ce.fit(idx)
     stream = ce.encode(idx)
     print('Conditional Entropy avg =', len(stream)/(idx.shape[0]))

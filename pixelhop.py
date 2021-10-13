@@ -67,9 +67,9 @@ class Pixelhop():
             X = Batch_PixelHop_Neighbour(X, self.dilate, self.pad, self.batch)
         S = X.shape
         X = X.reshape(-1, X.shape[-1])
-        X, DC = self.saab.transform(X)
+        X = self.saab.transform(X)
         X = X.reshape(S[0], S[1], S[2], -1)
-        return X, DC
+        return X
 
 if __name__ == "__main__":
     from sklearn import datasets
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     # run
     hop1 = Pixelhop(dilate=1, pad='reflect', SaabArg=SaabArg, batch=None)
     hop1.fit(X)
-    X2, DC = hop1.transform(X)
+    X2 = hop1.transform(X)
     print(" --> test feature shape: ", X2.shape)
     print("------- DONE -------\n")
 
