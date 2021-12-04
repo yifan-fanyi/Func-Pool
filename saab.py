@@ -4,8 +4,6 @@
 # modeiled from https://github.com/davidsonic/Interpretable_CNN
 
 import numpy as np
-from sklearn.decomposition import PCA
-
 from myPCA import myPCA
 
 class Saab():

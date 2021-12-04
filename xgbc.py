@@ -30,6 +30,7 @@ class XGBC():
         prob = self.predict_proba(X)
         pred = np.asarray([np.argmax(line) for line in prob])
         return pred
+        
 if __name__ == "__main__":   
     from sklearn import datasets
     from sklearn.metrics import precision_score, recall_score, accuracy_score

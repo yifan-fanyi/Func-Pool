@@ -1,0 +1,12 @@
+scipy==1.7.1
+torchac==0.9.3
+faiss==1.5.3
+xgboost==1.4.1
+numpy==1.19.5
+scikit_image==0.17.2
+torch==1.8.0
+opencv_python==4.4.0.46
+huffman==0.1.2
+Pillow==8.4.0
+scikit_learn==1.0.1
+skimage==0.0

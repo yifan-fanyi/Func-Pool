@@ -32,6 +32,32 @@ class DCT():
         X = llsr.predict_proba(X.reshape(-1, X.shape[-1])).reshape(S)
         return X
 
+
+class DCT3D():
+    def __init__(self, N=8, P=8, C=3, ):
+        self.N = N
+        self.P = P
+        self.C = C
+    
+    def fit(self, X):
+        return self
+
+    def transform(self, a):
+        S = list(a.shape)
+        a = a.reshape(-1, self.N, self.P, self.C)
+        a = dct(a, axis=1, norm='ortho')
+        a = dct(a, axis=2, norm='ortho')
+        a = dct(a, axis=3, norm='ortho')
+        return a.reshape(S)
+
+    def inverse_transform(self, a):
+        S = list(a.shape)
+        a = a.reshape(-1, self.N, self.P, self.C)
+        a = idct(a, axis=1, norm='ortho')
+        a = idct(a, axis=2, norm='ortho')
+        a = idct(a, axis=3, norm='ortho')
+        return a.reshape(S)
+
 # use DCT and IDCT for interpolation 
 # input for Smooth_Interpolation: (?, initN, initN, 1)
 # return for Smooth_Interpolation: (?, targetN, targetN, 1)
