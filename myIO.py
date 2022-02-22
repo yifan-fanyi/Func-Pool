@@ -17,13 +17,13 @@ class myIO():
     @staticmethod
     def bstr2chr(bst):
         assert len(bst) <= 8, "Length Error!"
-        val = bstr2int(bst)
-        return int2chr(val)
+        val = myIO.bstr2int(bst)
+        return myIO.int2chr(val)
 
     @staticmethod
     def chr2bstr(char):
-        val = chr2int(char)
-        bst = int2bstr(val)
+        val = myIO.chr2int(char)
+        bst = myIO.int2bstr(val)
         return bst
 
     @staticmethod

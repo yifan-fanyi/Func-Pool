@@ -5,6 +5,7 @@ import numpy as np
 from scipy.fftpack import dct, idct
 
 from LLSR import LLSR
+from ZigZag import ZigZag
 
 class DCT():
     def __init__(self, N=8, P=8):
@@ -44,7 +45,7 @@ class DCT3D():
 
     def transform(self, a):
         S = list(a.shape)
-        a = a.reshape(-1, self.N, self.P, self.C)
+        a = a.reshape(-1, self.C, self.N, self.P)
         a = dct(a, axis=1, norm='ortho')
         a = dct(a, axis=2, norm='ortho')
         a = dct(a, axis=3, norm='ortho')
@@ -52,7 +53,7 @@ class DCT3D():
 
     def inverse_transform(self, a):
         S = list(a.shape)
-        a = a.reshape(-1, self.N, self.P, self.C)
+        a = a.reshape(-1, self.C, self.N, self.P)
         a = idct(a, axis=1, norm='ortho')
         a = idct(a, axis=2, norm='ortho')
         a = idct(a, axis=3, norm='ortho')

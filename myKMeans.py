@@ -7,7 +7,18 @@
 #
 import faiss
 import numpy as np
+import copy
+import sklearn
+from sklearn import cluster
 
+def Cpredict(X, cent):
+    X = np.ascontiguousarray(X.astype('float32'))
+    cent = np.ascontiguousarray(cent.astype('float32'))
+    index = faiss.IndexFlatL2(cent.shape[1]) 
+    index.add(cent)             
+    _, I = index.search(X, 1)
+    return I
+    
 class fast_KMeans:
     def __init__(self, n_clusters=8, n_init=10, max_iter=300, gpu=False, n_threads=10):
         self.n_clusters = n_clusters
@@ -47,14 +58,6 @@ class fast_KMeans:
     def inverse_predict(self, label):
         return self.cluster_centers[label]
 
-
-# @yifan
-import numpy as np 
-import copy
-import sklearn
-from sklearn import cluster
-from sklearn.metrics.pairwise import euclidean_distances
-
 def sort_by_eng(Cent):
     eng = np.sum(np.square(Cent), axis=1)
     idx = np.argsort(eng)
@@ -66,13 +69,25 @@ def sort_by_eng(Cent):
         imp[idx[i]] = i
     return mp, imp
 
+def sort_by_hist(x):
+    def Hist(x):
+        hist = np.zeros(len(np.unique(x)))
+        x = x.reshape(-1)
+        for i in x:
+            hist[i] += 1
+        return hist
+    hist = Hist(x)
+    idx = np.argsort(hist)[::-1]
+    mp, imp = {}, {}
+    for i in range(len(hist)):
+        mp[idx[i]] = i
+        imp[i] = idx[i]
+    return mp, imp
+
 class Mapping():
-    def __init__(self, Cent=None, mp=None, imp=None):
-        if mp is None:
-            self.map, self.inv_map = sort_by_eng(Cent)
-        else:
-            self.map, self.inv_map = mp, imp
-        self.version = '2021.10.13'
+    def __init__(self, mp, imp):
+        self.map, self.inv_map = mp, imp
+        self.version = '2021.05.14'
 
     def transform(self, label):
         S = label.shape
@@ -113,8 +128,11 @@ class myKMeans():
         self.truncate(X)
         self.KM.fit(  X  )
         if self.sort == True:
-            self.MP = Mapping(Cent=np.array(  self.KM.cluster_centers_  ))
-        self.cluster_centers_ = copy.deepcopy(np.array(  self.KM.cluster_centers_  ))
+            l = self.KM.predict(X)
+            mp, imp = sort_by_hist(l)
+            #mp, imp = sort_by_eng(np.array(  self.KM.cluster_centers_  ))
+            self.MP = Mapping(mp, imp)
+        self.cluster_centers_ = copy.deepcopy(np.array(  self.KM.cluster_centers_  )).astype('float32')
         if self.saveObj == False:
             self.KM = None
         return self
@@ -122,11 +140,12 @@ class myKMeans():
     def Cpredict(self, X):
         index = faiss.IndexFlatL2(self.cluster_centers_.shape[1]) 
         index.add(self.cluster_centers_)             
-        D, I = index.search(X, 1)
+        _, I = index.search(X, 1)
         return I
 
     def predict(self, X):
         S = (list)(X.shape)
+        X = X.astype('float32')
         S[-1] = -1
         X = X.reshape(-1, X.shape[-1])
         if self.saveObj == True:
@@ -142,7 +161,8 @@ class myKMeans():
         S = (list)(idx.shape)
         S[-1] = -1
         idx = idx.reshape(-1,)
+        idx[idx >= self.n_clusters] = 0
         if self.sort == True:
             idx = self.MP.inverse_transform(idx)
         X = self.cluster_centers_[idx]
-        return X.reshape(S)
+        return X.reshape(S).astype('float32')
